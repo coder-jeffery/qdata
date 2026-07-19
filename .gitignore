@@ -1,0 +1,46 @@
+# Secrets & local env
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / Web
+apps/web/node_modules/
+apps/web/dist/
+**/node_modules/
+
+# Data lake & runtime artifacts (large / regenerable)
+data/
+data-lake/
+logs/
+*.parquet
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local tooling / agent caches
+.cursor/
+.agents/
+.claude/
+.pytest_cache/
+.ruff_cache/

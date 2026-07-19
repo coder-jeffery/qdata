@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>qdata 运营后台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ========== 设计令牌：4/8 尺寸 · 莫兰迪 · 毛玻璃 ========== */
+    :root {
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 24px;
+      --space-6: 32px;
+      --space-7: 48px;
+      --space-8: 64px;
+
+      --r-sm: 8px;
+      --r-md: 12px;
+
+      --line: 2px;
+
+      /* 低饱和莫兰迪 */
+      --bg-0: #F3F1EE;
+      --bg-1: #EDEAE5;
+      --ink: #2C2A28;
+      --ink-2: #5A5652;
+      --ink-3: #8A8580;
+      --surface: rgba(255, 252, 248, 0.72);
+      --surface-solid: #FFFCFA;
+      --glass: rgba(255, 252, 248, 0.55);
+      --glass-strong: rgba(255, 252, 248, 0.78);
+      --border: rgba(44, 42, 40, 0.08);
+      --border-strong: rgba(44, 42, 40, 0.12);
+
+      --accent: #6B7F7A;       /* 鼠尾草绿灰 */
+      --accent-2: #8B7355;     /* 暖陶土灰 */
+      --accent-soft: rgba(107, 127, 122, 0.12);
+      --up: #5F7A68;
+      --down: #A66A5E;
+      --warn: #A68B5B;
+
+      --shadow-1: 0 1px 2px rgba(44, 42, 40, 0.04), 0 4px 12px rgba(44, 42, 40, 0.04);
+      --shadow-2: 0 2px 4px rgba(44, 42, 40, 0.05), 0 12px 28px rgba(44, 42, 40, 0.07);
+      --shadow-hover: 0 4px 8px rgba(44, 42, 40, 0.06), 0 16px 40px rgba(44, 42, 40, 0.1);
+      --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+
+      --font: "DM Sans", "Noto Sans SC", system-ui, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+
+      --nav-w: 248px;
+      --grid-max: 1120px;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --dur: 220ms;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.55;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(168, 175, 168, 0.28), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(196, 176, 156, 0.22), transparent 50%),
+        linear-gradient(165deg, var(--bg-0) 0%, var(--bg-1) 48%, #E8E4DE 100%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 哑光噪点层（极弱） */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: var(--nav-w) 1fr;
+      min-height: 100%;
+      gap: 0;
+    }
+
+    /* —— 侧栏：毛玻璃 —— */
+    .nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: var(--space-5) var(--space-3) var(--space-6);
+      background: var(--glass);
+      backdrop-filter: blur(18px) saturate(1.1);
+      -webkit-backdrop-filter: blur(18px) saturate(1.1);
+      border-right: var(--line) solid var(--border);
+      box-shadow: var(--highlight), var(--shadow-1);
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3) var(--space-5);
+      margin-bottom: var(--space-2);
+      border-bottom: var(--line) solid var(--border);
+    }
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--r-sm);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.7), rgba(255,255,255,0.15)),
+        linear-gradient(135deg, #8A9A94, #6B7F7A);
+      box-shadow: var(--shadow-1), var(--highlight);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .brand-mark svg { width: 16px; height: 16px; stroke: #FFFCFA; fill: none; stroke-width: 1.5; }
+    .brand-text strong {
+      display: block;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .brand-text span {
+      display: block;
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--ink-3);
+      letter-spacing: 0.02em;
+    }
+
+    .nav-group { margin-top: var(--space-5); padding: 0 var(--space-1); }
+    .nav-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-3);
+      letter-spacing: 0.1em;
+      padding: 0 var(--space-3) var(--space-2);
+    }
+
+    .nav button {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      color: var(--ink-2);
+      font: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 10px var(--space-3);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      transition: background var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur) var(--ease);
+    }
+    .nav button svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+      opacity: 0.75;
+    }
+    .nav button:hover {
+      background: rgba(255, 255, 255, 0.45);
+      color: var(--ink);
+    }
+    .nav button.active {
+      background: var(--glass-strong);
+      color: var(--ink);
+      box-shadow: var(--shadow-1), var(--highlight);
+    }
+    .nav button.active svg { opacity: 1; stroke: var(--accent); }
+
+    /* —— 主区 —— */
+    .main {
+      padding: var(--space-6) var(--space-7) var(--space-8);
+      max-width: calc(var(--grid-max) + var(--space-7) * 2);
+    }
+
+    .page-head {
+      margin-bottom: var(--space-6);
+      max-width: 40em;
+    }
+    .page-head h1 {
+      margin: 0 0 var(--space-2);
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .page-head p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--ink-2);
+      line-height: 1.65;
+    }
+
+    /* 卡片网格 */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(16px) saturate(1.05);
+      -webkit-backdrop-filter: blur(16px) saturate(1.05);
+      border: var(--line) solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-1), var(--highlight);
+      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover), var(--highlight);
+      border-color: var(--border-strong);
+    }
+
+    .metric {
+      padding: var(--space-4) var(--space-5);
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .metric .label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-3);
+      letter-spacing: 0.02em;
+    }
+    .metric .value {
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-top: var(--space-3);
+    }
+    .metric .value.sm { font-size: 15px; line-height: 1.35; }
+    .metric .hint {
+      margin-top: var(--space-2);
+      font-size: 12px;
+      color: var(--ink-3);
+    }
+    .metric .value.up { color: var(--up); }
+    .metric .value.down { color: var(--down); }
+    .metric .value.warn { color: var(--warn); }
+    .metric .value.accent { color: var(--accent); }
+
+    .section { margin-bottom: var(--space-6); }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+      padding: 0 var(--space-1);
+    }
+    .section-head h2 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--ink-2);
+    }
+
+    .panel {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px var(--space-4);
+      border-bottom: var(--line) solid var(--border);
+    }
+    th {
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--ink-3);
+      background: rgba(255, 252, 248, 0.4);
+    }
+    td { color: var(--ink); }
+    td.num {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 12.5px;
+    }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr {
+      transition: background var(--dur) var(--ease);
+    }
+    tbody tr:hover td {
+      background: rgba(107, 127, 122, 0.06);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin-bottom: var(--space-5);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      border: var(--line) solid var(--border-strong);
+      background: var(--glass-strong);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: var(--ink);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px var(--space-4);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      box-shadow: var(--shadow-1), var(--highlight);
+      transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease);
+    }
+    .btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-2), var(--highlight);
+    }
+    .btn:active { transform: translateY(0); }
+    .btn.primary {
+      background: linear-gradient(145deg, #7A8F89 0%, var(--accent) 100%);
+      border-color: transparent;
+      color: #FFFCFA;
+      box-shadow: var(--shadow-1), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .btn.primary:hover { filter: brightness(1.03); }
+    .btn.ghost {
+      background: transparent;
+      box-shadow: none;
+    }
+    .btn.sm { padding: 6px 10px; font-size: 12px; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: var(--line) solid transparent;
+    }
+    .status.ok {
+      color: var(--up);
+      background: rgba(95, 122, 104, 0.1);
+      border-color: rgba(95, 122, 104, 0.18);
+    }
+    .status.fail {
+      color: var(--down);
+      background: rgba(166, 106, 94, 0.1);
+      border-color: rgba(166, 106, 94, 0.18);
+    }
+    .status.warn {
+      color: var(--warn);
+      background: rgba(166, 139, 91, 0.12);
+      border-color: rgba(166, 139, 91, 0.2);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 96px 1fr 44px;
+      gap: var(--space-3);
+      align-items: center;
+      padding: 12px var(--space-4);
+      border-bottom: var(--line) solid var(--border);
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+    .bar-row:last-child { border-bottom: 0; }
+    .bar-track {
+      height: 6px;
+      background: rgba(44, 42, 40, 0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #8A9A94, var(--accent));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .bar-row .num {
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: right;
+      color: var(--ink-3);
+    }
+
+    .page { display: none; animation: fadeIn 320ms var(--ease); }
+    .page.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .foot {
+      margin-top: var(--space-7);
+      padding-top: var(--space-4);
+      border-top: var(--line) solid var(--border);
+      font-size: 12px;
+      color: var(--ink-3);
+      letter-spacing: 0.01em;
+    }
+
+    /* 响应式 */
+    @media (max-width: 1100px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .nav {
+        height: auto;
+        position: relative;
+        border-right: 0;
+        border-bottom: var(--line) solid var(--border);
+      }
+      .split { grid-template-columns: 1fr; }
+      .main { padding: var(--space-5) var(--space-4) var(--space-7); }
+      .page-head h1 { font-size: 24px; }
+    }
+    @media (max-width: 520px) {
+      .metrics { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 细线 icon 模板（等距轻描） -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></symbol>
+    <symbol id="i-health" viewBox="0 0 24 24"><path d="M4 14h3l2-5 3 10 2-6h3"/><circle cx="19" cy="7" r="2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 3 19h18L12 4z"/><path d="M12 10v4M12 16.5v.5"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 24 24"><path d="M5 18V10M10 18V6M15 18v-7M20 18V8"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-paper" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 10h8M8 14h5"/></symbol>
+    <symbol id="i-mark" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></symbol>
+    <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 4v10M8 8l4-4 4 4M5 16v3h14v-3"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M4 16 12 4l8 12H4z"/><path d="M8 16h8"/></symbol>
+  </svg>
+
+  <div class="shell">
+    <aside class="nav">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg><use href="#i-logo"/></svg>
+        </div>
+        <div class="brand-text">
+          <strong>qdata</strong>
+          <span>运营后台 · 研究 / 运维</span>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">总览</div>
+        <button type="button" class="active" data-page="home">
+          <svg><use href="#i-home"/></svg>运营首页
+        </button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">数据运维</div>
+        <button type="button" data-page="health">
+          <svg><use href="#i-health"/></svg>数据健康
+        </button>
+        <button type="button" data-page="ops">
+          <svg><use href="#i-alert"/></svg>日批与告警
+        </button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">研究决策</div>
+        <button type="button" data-page="signal">
+          <svg><use href="#i-signal"/></svg>信号台
+        </button>
+        <button type="button" data-page="experiment">
+          <svg><use href="#i-grid"/></svg>实验矩阵
+        </button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">纸交易</div>
+        <button type="button" data-page="paper">
+          <svg><use href="#i-paper"/></svg>Paper 运营
+        </button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- 运营首页 -->
+      <section id="page-home" class="page active">
+        <div class="page-head">
+          <h1>运营首页</h1>
+          <p>一眼查看日批、数据水位、因子监控与纸交易摘要。写操作均需确认，保持克制与可追溯。</p>
+        </div>
+
+        <div class="metrics">
+          <div class="card metric">
+            <div class="label">最近日批结果</div>
+            <div>
+              <div class="value up">成功</div>
+              <div class="hint">交易日 2026-07-15</div>
+            </div>
+          </div>
+          <div class="card metric">
+            <div class="label">日线覆盖区间</div>
+            <div>
+              <div class="value sm">2026-04-01 → 07-15</div>
+              <div class="hint">已发布约 71 个交易日</div>
+            </div>
+          </div>
+          <div class="card metric">
+            <div class="label">因子监控告警数</div>
+            <div>
+              <div class="value warn">2</div>
+              <div class="hint">来源：日批软挂 · 阈值 90%</div>
+            </div>
+          </div>
+          <div class="card metric">
+            <div class="label">最新会话总资产</div>
+            <div>
+              <div class="value">1,024,380</div>
+              <div class="hint">相对初始 +2.4%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn primary" data-page="signal">
+            <svg><use href="#i-signal"/></svg>构建 / 查看信号
+          </button>
+          <button type="button" class="btn" data-page="paper">
+            <svg><use href="#i-paper"/></svg>Paper 调仓会话
+          </button>
+          <button type="button" class="btn" data-page="experiment">
+            <svg><use href="#i-grid"/></svg>实验矩阵
+          </button>
+          <button type="button" class="btn ghost" data-page="ops">日批与告警</button>
+        </div>
+
+        <div class="split">
+          <div class="section">
+            <div class="section-head"><h2>因子覆盖</h2></div>
+            <div class="card panel">
+              <div class="bar-row"><span>动量 20 日</span><div class="bar-track"><div class="bar-fill" style="width:96%"></div></div><span class="num">96%</span></div>
+              <div class="bar-row"><span>波动 20 日</span><div class="bar-track"><div class="bar-fill" style="width:95%"></div></div><span class="num">95%</span></div>
+              <div class="bar-row"><span>盈利收益率</span><div class="bar-track"><div class="bar-fill" style="width:88%"></div></div><span class="num">88%</span></div>
+              <div class="bar-row"><span>账面市值比</span><div class="bar-track"><div class="bar-fill" style="width:87%"></div></div><span class="num">87%</span></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-head"><h2>最近告警</h2></div>
+            <div class="card panel">
+              <table>
+                <thead><tr><th>时间</th><th>类型</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td class="num">17:32</td><td><span class="status warn">监控警告</span></td><td>盈利收益率覆盖率低于阈值</td></tr>
+                  <tr><td class="num">17:32</td><td><span class="status warn">监控警告</span></td><td>账面市值比覆盖率低于阈值</td></tr>
+                  <tr><td class="num">17:30</td><td><span class="status ok">日批成功</span></td><td>发布完成，软挂监控已执行</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 数据健康 -->
+      <section id="page-health" class="page">
+        <div class="page-head">
+          <h1>数据健康</h1>
+          <p>发布连续性、全市场行数与验收状态。研究读数前请先确认此处状态正常。</p>
+        </div>
+        <div class="metrics">
+          <div class="card metric">
+            <div class="label">最新发布日</div>
+            <div><div class="value sm">2026-07-15</div><div class="hint">数据集版本</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">连续发布天数</div>
+            <div><div class="value accent">11</div><div class="hint">区间内无断档</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">全市场行数</div>
+            <div><div class="value">5,201</div><div class="hint">当日日线</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">验收状态</div>
+            <div><div class="value up">通过</div><div class="hint">发布验收</div></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><h2>水位明细</h2></div>
+          <div class="card panel">
+            <table>
+              <thead>
+                <tr><th>数据表</th><th>中文说明</th><th>起始日</th><th>截止日</th><th>行数</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="num">daily_bar</td><td>日线行情</td><td class="num">2026-04-01</td><td class="num">2026-07-15</td><td class="num">369,257</td></tr>
+                <tr><td class="num">daily_basic</td><td>每日估值指标</td><td class="num">2026-01-02</td><td class="num">2026-07-15</td><td class="num">722,000</td></tr>
+                <tr><td class="num">fin_statement</td><td>财务报表（时点正确）</td><td class="num">—</td><td class="num">—</td><td class="num">23,623</td></tr>
+                <tr><td class="num">factor_value</td><td>种子因子</td><td class="num">2026-07-01</td><td class="num">2026-07-15</td><td class="num">~57,000 / 因子</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 日批与告警 -->
+      <section id="page-ops" class="page">
+        <div class="page-head">
+          <h1>日批与告警</h1>
+          <p>区分硬失败与软监控：日批失败阻断发布；因子监控警告不阻断。</p>
+        </div>
+        <div class="metrics">
+          <div class="card metric">
+            <div class="label">今日日批</div>
+            <div><div class="value up">成功</div><div class="hint">含增量数据 / 行业 / 因子</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">软挂监控</div>
+            <div><div class="value accent">已执行</div><div class="hint">日批后自动触发</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">硬失败次数</div>
+            <div><div class="value">0</div><div class="hint">近 5 个交易日</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">监控警告次数</div>
+            <div><div class="value warn">2</div><div class="hint">不阻断发布</div></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><h2>事件流</h2></div>
+          <div class="card panel">
+            <table>
+              <thead><tr><th>级别</th><th>标题</th><th>中文说明</th></tr></thead>
+              <tbody>
+                <tr><td><span class="status ok">成功</span></td><td class="num">daily_run OK</td><td>日批成功，数据已发布</td></tr>
+                <tr><td><span class="status warn">警告</span></td><td class="num">factor_monitor WARN</td><td>因子监控警告，覆盖率偏低</td></tr>
+                <tr><td><span class="status fail">失败</span></td><td class="num">daily_run FAIL</td><td>日批失败（示例文案）</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 信号台 -->
+      <section id="page-signal" class="page">
+        <div class="page-head">
+          <h1>信号台</h1>
+          <p>查看信号日目标权重、行业暴露与可交易性；支持批量研判与调仓衔接。</p>
+        </div>
+        <div class="metrics">
+          <div class="card metric">
+            <div class="label">信号日</div>
+            <div><div class="value sm">2026-07-15</div><div class="hint">asof</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">因子 / 加权</div>
+            <div><div class="value sm">盈利收益率 / 等权</div><div class="hint">ep · equal</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">成分数</div>
+            <div><div class="value">50</div><div class="hint">权重合计 1.0000</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">不可交易数</div>
+            <div><div class="value warn">3</div><div class="hint">涨跌停或停牌预览</div></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn primary"><svg><use href="#i-mark"/></svg>批量研判 TopN</button>
+          <button type="button" class="btn"><svg><use href="#i-export"/></svg>导出权重</button>
+          <button type="button" class="btn" data-page="paper"><svg><use href="#i-arrow"/></svg>据此调仓</button>
+        </div>
+        <div class="section">
+          <div class="section-head"><h2>目标权重（示意前 6 名）</h2></div>
+          <div class="card panel">
+            <table>
+              <thead>
+                <tr><th>代码</th><th>权重</th><th>可交易</th><th>操作</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="num">600519.SH</td><td class="num">0.0200</td><td><span class="status ok">可交易</span></td><td><button class="btn sm ghost">打开研判</button></td></tr>
+                <tr><td class="num">000858.SZ</td><td class="num">0.0200</td><td><span class="status ok">可交易</span></td><td><button class="btn sm ghost">打开研判</button></td></tr>
+                <tr><td class="num">601318.SH</td><td class="num">0.0200</td><td><span class="status warn">受限</span></td><td><button class="btn sm ghost">打开研判</button></td></tr>
+                <tr><td class="num">600036.SH</td><td class="num">0.0200</td><td><span class="status ok">可交易</span></td><td><button class="btn sm ghost">打开研判</button></td></tr>
+                <tr><td class="num">000333.SZ</td><td class="num">0.0200</td><td><span class="status ok">可交易</span></td><td><button class="btn sm ghost">打开研判</button></td></tr>
+                <tr><td class="num">600276.SH</td><td class="num">0.0200</td><td><span class="status fail">阻断</span></td><td><button class="btn sm ghost">打开研判</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 实验矩阵 -->
+      <section id="page-experiment" class="page">
+        <div class="page-head">
+          <h1>实验矩阵</h1>
+          <p>对比因子与加权方式的回测指标；选中最优单元后可显式挂钩纸交易调仓。</p>
+        </div>
+        <div class="section">
+          <div class="section-head"><h2>指标对比</h2></div>
+          <div class="card panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>因子</th>
+                  <th>加权方式</th>
+                  <th>夏普比率</th>
+                  <th>年化收益</th>
+                  <th>最大回撤</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>盈利收益率</td><td>等权</td>
+                  <td class="num up">7.56</td><td class="num">139.6%</td><td class="num">-2.96%</td>
+                  <td><span class="status ok">成功</span></td>
+                </tr>
+                <tr>
+                  <td>盈利收益率</td><td>行业中性</td>
+                  <td class="num up">6.75</td><td class="num">147.2%</td><td class="num">-3.67%</td>
+                  <td><span class="status ok">成功</span></td>
+                </tr>
+                <tr>
+                  <td>动量 20 日</td><td>等权</td>
+                  <td class="num down">-2.25</td><td class="num down">-95.9%</td><td class="num">-13.6%</td>
+                  <td><span class="status ok">成功</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn primary">用最优单元挂钩调仓</button>
+          <button type="button" class="btn ghost">查看实验编号</button>
+        </div>
+      </section>
+
+      <!-- Paper -->
+      <section id="page-paper" class="page">
+        <div class="page-head">
+          <h1>Paper 运营</h1>
+          <p>查看会话账户、成交拒单与日终盯市；支持多会话横向对比。</p>
+        </div>
+        <div class="metrics">
+          <div class="card metric">
+            <div class="label">现金</div>
+            <div><div class="value">412,000</div><div class="hint">未投入部分</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">持仓市值</div>
+            <div><div class="value">612,380</div><div class="hint">按调仓日价</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">总资产</div>
+            <div><div class="value">1,024,380</div><div class="hint">现金 + 市值</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">成交 / 拒单</div>
+            <div><div class="value sm">48 / 2</div><div class="hint">含风控拒单</div></div>
+          </div>
+        </div>
+        <div class="metrics">
+          <div class="card metric">
+            <div class="label">盯市日总资产</div>
+            <div><div class="value">1,031,200</div><div class="hint">盯市日 2026-07-15</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">相对初始盈亏</div>
+            <div><div class="value up">+31,200</div><div class="hint">相对初始资金</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">相对调仓盈亏</div>
+            <div><div class="value up">+6,820</div><div class="hint">相对调仓后快照</div></div>
+          </div>
+          <div class="card metric">
+            <div class="label">实验挂钩</div>
+            <div><div class="value sm">盈利收益率 / 等权</div><div class="hint">已启用挂钩</div></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn primary"><svg><use href="#i-mark"/></svg>执行日终盯市</button>
+          <button type="button" class="btn">对比所选会话</button>
+        </div>
+        <div class="section">
+          <div class="section-head"><h2>会话对比</h2></div>
+          <div class="card panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>会话编号</th>
+                  <th>信号日</th>
+                  <th>总资产</th>
+                  <th>成交笔数</th>
+                  <th>相对初始盈亏</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="num">ps_…5b921d60</td>
+                  <td class="num">2026-07-15</td>
+                  <td class="num">1,024,380</td>
+                  <td class="num">48</td>
+                  <td class="num up">+24,380</td>
+                </tr>
+                <tr>
+                  <td class="num">ps_…4561fd89</td>
+                  <td class="num">2026-07-15</td>
+                  <td class="num">998,120</td>
+                  <td class="num">41</td>
+                  <td class="num down">-1,880</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <div class="foot">
+        莫兰迪哑光 · 毛玻璃分层 · 8/12 圆角 · 4/8 栅格 · 示意数据，非实盘 · 真金下单不在本后台范围
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const buttons = document.querySelectorAll("[data-page]");
+    const pages = document.querySelectorAll(".page");
+    const navBtns = document.querySelectorAll(".nav button[data-page]");
+
+    function show(id) {
+      pages.forEach((p) => {
+        const on = p.id === "page-" + id;
+        p.classList.toggle("active", on);
+        if (on) {
+          p.style.animation = "none";
+          void p.offsetWidth;
+          p.style.animation = "";
+        }
+      });
+      navBtns.forEach((b) => b.classList.toggle("active", b.dataset.page === id));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    buttons.forEach((b) => {
+      b.addEventListener("click", () => show(b.dataset.page));
+    });
+  </script>
+</body>
+</html>

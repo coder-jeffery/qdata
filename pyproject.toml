@@ -1,0 +1,54 @@
+[project]
+name = "qdata"
+version = "0.1.0"
+description = "A 股量化平台数据管道与历史库（M1 工作流一）"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.2",
+    "pyarrow>=17.0",
+    "clickhouse-connect>=0.8",
+    "akshare>=1.14",
+    "baostock>=0.8",
+    "pydantic-settings>=2.5",
+    "tenacity>=8.1",
+]
+
+[project.optional-dependencies]
+airflow = ["apache-airflow>=2.10"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+dashboard = ["streamlit>=1.32"]
+web = ["fastapi>=0.115", "uvicorn[standard]>=0.32", "httpx>=0.27"]
+tushare = ["tushare>=1.4"]
+joinquant = ["jqdatasdk>=1.9"]
+efinance = ["efinance>=0.5"]
+mootdx = ["mootdx>=0.11", "pytdx>=1.72"]
+easyquotation = ["easyquotation>=0.7"]
+zvt = ["zvt>=0.9"]
+easytrader = ["easytrader>=0.23"]
+# MiniQMT 的 xtquant 随 QMT 安装，不在纯 PyPI；保留空 extra 作文档入口
+miniqmt = []
+# 一键安装公开行情源（不含 zvt 重依赖 / 本机交易端 / 需账号的 joinquant）
+sources = [
+    "tushare>=1.4",
+    "efinance>=0.5",
+    "mootdx>=0.11",
+    "pytdx>=1.72",
+    "easyquotation>=0.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qdata"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "integration: tests that need ClickHouse or external services",
+]
+[tool.ruff]
+line-length = 110
+target-version = "py312"

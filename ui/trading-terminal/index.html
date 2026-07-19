@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>qdata · Institutional Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --pad: 8px;
+      --r: 8px;
+      --font: "IBM Plex Sans", "Noto Sans SC", system-ui, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --nav: 212px;
+      --rail: 328px;
+    }
+
+    html[data-theme="dark"] {
+      --bg: #0A1018;
+      --bg-2: #0D1520;
+      --panel: #121C2A;
+      --panel-2: #172433;
+      --line: rgba(160, 190, 220, 0.08);
+      --line-2: rgba(160, 190, 220, 0.14);
+      --text: #F4F8FC;
+      --text-2: #A8B4C4;
+      --text-3: #6A788A;
+      --accent: #8EC4D4;
+      --accent-hi: #B0DBE8;
+      --accent-dim: rgba(142, 196, 212, 0.18);
+      --up: #4ED68A;
+      --down: #F07178;
+      --glow: 0 0 0 1px rgba(142, 196, 212, 0.42);
+      --shade: 0 20px 56px rgba(0, 0, 0, 0.5);
+      --inset: inset 0 1px 0 rgba(180, 210, 230, 0.05);
+      --atmosphere: radial-gradient(900px 420px at 78% -12%, rgba(142, 196, 212, 0.12), transparent 55%);
+      --btn-grad: linear-gradient(180deg, #A8D4E0 0%, #8EC4D4 55%, #6FAABB 100%);
+      --btn-text: #0A1018;
+      --grain-opacity: 0.038;
+      --frost-opacity: 0.022;
+    }
+
+    html[data-theme="light"] {
+      --bg: #EEF2F6;
+      --bg-2: #E4EAF1;
+      --panel: #F7FAFC;
+      --panel-2: #EEF3F8;
+      --line: rgba(20, 40, 60, 0.08);
+      --line-2: rgba(20, 40, 60, 0.14);
+      --text: #0E1620;
+      --text-2: #3A4A5C;
+      --text-3: #6B7A8C;
+      --accent: #4A8A9E;
+      --accent-hi: #2F6A7E;
+      --accent-dim: rgba(74, 138, 158, 0.14);
+      --up: #1A9B4F;
+      --down: #D64545;
+      --glow: 0 0 0 1px rgba(74, 138, 158, 0.38);
+      --shade: 0 14px 40px rgba(18, 32, 48, 0.1);
+      --inset: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      --atmosphere: radial-gradient(900px 420px at 78% -12%, rgba(74, 138, 158, 0.1), transparent 55%);
+      --btn-grad: linear-gradient(180deg, #5A9BB0 0%, #4A8A9E 55%, #3A7386 100%);
+      --btn-text: #F7FAFC;
+      --grain-opacity: 0.028;
+      --frost-opacity: 0.016;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.45;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Frosted film grain over the desk (pointer-events none) */
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      pointer-events: none;
+    }
+    body::before {
+      opacity: var(--grain-opacity);
+      mix-blend-mode: soft-light;
+      /* lower baseFrequency + larger tile = coarser grain */
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 280px 280px;
+      background-repeat: repeat;
+    }
+    body::after {
+      opacity: var(--frost-opacity);
+      mix-blend-mode: overlay;
+      background:
+        radial-gradient(2px 2px at 18% 28%, rgba(255,255,255,0.45), transparent 3.5px),
+        radial-gradient(1.6px 1.6px at 72% 58%, rgba(255,255,255,0.3), transparent 3px),
+        radial-gradient(1.8px 1.8px at 42% 82%, rgba(200,220,240,0.24), transparent 3.2px),
+        radial-gradient(1.4px 1.4px at 88% 18%, rgba(255,255,255,0.22), transparent 2.8px);
+      background-size: 180px 180px, 240px 240px, 300px 300px, 210px 210px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    button, input, select {
+      font: inherit;
+      color: inherit;
+      border: none;
+      background: none;
+      outline: none;
+    }
+    button { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .up {
+      color: var(--up);
+      font-weight: 600;
+      text-shadow: 0 0 12px color-mix(in srgb, var(--up) 28%, transparent);
+    }
+    .down {
+      color: var(--down);
+      font-weight: 600;
+      text-shadow: 0 0 12px color-mix(in srgb, var(--down) 28%, transparent);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: var(--nav) 1fr;
+      height: 100vh;
+    }
+
+    .nav {
+      background:
+        linear-gradient(180deg, rgba(142, 196, 212, 0.03), transparent 40%),
+        var(--bg-2);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 18px;
+      backdrop-filter: blur(10px);
+    }
+    .logo {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 36px;
+      padding: 0 8px;
+    }
+    .logo strong {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+    .logo em {
+      font-style: normal;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--accent-hi);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-shadow: 0 0 18px rgba(142, 196, 212, 0.35);
+    }
+    .nav-sec {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin: 22px 8px 8px;
+    }
+    .nav-sec:first-of-type { margin-top: 0; }
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--r);
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.2s var(--ease), color 0.2s var(--ease);
+    }
+    .nav a svg {
+      width: 16px; height: 16px;
+      stroke: currentColor; fill: none; stroke-width: 1.4;
+      opacity: 0.7;
+    }
+    .nav a:hover { color: var(--text); background: rgba(142, 196, 212, 0.08); }
+    .nav a.on {
+      color: var(--accent-hi);
+      background: var(--accent-dim);
+      box-shadow: var(--glow);
+    }
+    .nav a.on svg { opacity: 1; stroke: var(--accent-hi); }
+    .nav-foot {
+      margin-top: auto;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .acct {
+      padding: 14px;
+      border-radius: var(--r);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--inset);
+    }
+    .acct .lbl {
+      font-size: 10px;
+      color: var(--text-3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .acct .name {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .acct .bal {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--text-2);
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: 56px 1fr;
+      min-width: 0;
+      background: var(--atmosphere), var(--bg);
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg-2) 72%, transparent);
+      backdrop-filter: blur(18px);
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 260px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: var(--r);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search:focus-within { border-color: var(--accent); box-shadow: var(--glow); }
+    .search svg {
+      width: 14px; height: 14px;
+      stroke: var(--text-3); fill: none; stroke-width: 1.5;
+      flex-shrink: 0;
+    }
+    .search input {
+      flex: 1;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+    }
+    .search input::placeholder { color: var(--text-3); }
+
+    .sym-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      flex: 1;
+      min-width: 0;
+    }
+    .sym-head .code {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .sym-head .name { font-size: 12px; color: var(--text-3); }
+    .sym-head .price {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      margin-left: 4px;
+    }
+    .sym-head .chg {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .sym-meta {
+      display: flex;
+      gap: 18px;
+      font-size: 11px;
+      color: var(--text-3);
+    }
+    .sym-meta b {
+      font-family: var(--mono);
+      font-weight: 500;
+      color: var(--text-2);
+      margin-left: 6px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .pill {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: var(--r);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text-2);
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s var(--ease);
+    }
+    .pill:hover { color: var(--text); border-color: var(--line-2); }
+    .pill.on {
+      color: var(--accent-hi);
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      background: var(--accent-dim);
+      box-shadow: var(--glow);
+    }
+    .icon {
+      width: 32px; height: 32px;
+      border-radius: var(--r);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      display: grid; place-items: center;
+      color: var(--text-2);
+      transition: all 0.2s;
+    }
+    .icon:hover { color: var(--text); border-color: var(--line-2); }
+    .icon svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.4; }
+
+    .work {
+      display: grid;
+      grid-template-columns: 1fr var(--rail);
+      gap: 1px;
+      background: var(--line);
+      min-height: 0;
+      overflow: hidden;
+    }
+    .col { background: var(--bg); min-height: 0; display: flex; flex-direction: column; }
+    .col-r { background: var(--bg); min-height: 0; overflow: auto; }
+
+    .watch {
+      display: flex;
+      gap: 8px;
+      padding: 14px 24px 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-bottom: 1px solid var(--line);
+    }
+    .watch::-webkit-scrollbar { display: none; }
+    .wchip {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border-radius: var(--r);
+      border: 1px solid var(--line);
+      background: transparent;
+      text-align: left;
+      min-width: 118px;
+      transition: all 0.2s;
+    }
+    .wchip:hover { border-color: var(--line-2); background: var(--panel); }
+    .wchip.on {
+      border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+      background: var(--accent-dim);
+      box-shadow: var(--glow);
+    }
+    .wchip .c { font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; }
+    .wchip .p {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
+    .chart-zone {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 16px 24px 0;
+    }
+    .tf {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+    .tf button {
+      padding: 6px 11px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-3);
+    }
+    .tf button:hover { color: var(--text-2); }
+    .tf button.on { color: var(--text); background: var(--panel); }
+
+    .chart {
+      flex: 1;
+      min-height: 260px;
+      border-radius: var(--r);
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(142, 196, 212, 0.09) 0%, transparent 42%),
+        var(--panel);
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--inset);
+      backdrop-filter: blur(12px) saturate(1.05);
+    }
+    .chart svg { width: 100%; height: 100%; display: block; }
+    .chart-tag {
+      position: absolute;
+      top: 14px; left: 14px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
+    .strip {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1px;
+      background: var(--line);
+      border-top: 1px solid var(--line);
+      height: 232px;
+      flex-shrink: 0;
+    }
+    .strip > section {
+      background: var(--bg);
+      padding: 16px 24px;
+      overflow: auto;
+    }
+    .sec-h {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .sec-h h3 {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+    .sec-h .link {
+      font-size: 11px;
+      color: var(--accent-hi);
+      font-weight: 500;
+    }
+    .sec-h .link:hover { color: var(--accent); }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 0 0 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    td {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--text-2);
+    }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover td { color: var(--text); }
+    td.mono { font-size: 12px; }
+
+    .rail {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--line);
+      min-height: 100%;
+    }
+    .rail > section {
+      background: var(--bg);
+      padding: 18px 20px;
+    }
+    .rail > section.grow { flex: 1; }
+
+    .sides {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .side {
+      height: 36px;
+      border-radius: var(--r);
+      border: 1px solid var(--line);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-3);
+      transition: all 0.2s;
+    }
+    .side.buy.on {
+      color: var(--up);
+      background: rgba(78, 214, 138, 0.14);
+      border-color: rgba(78, 214, 138, 0.42);
+    }
+    .side.sell.on {
+      color: var(--down);
+      background: rgba(240, 113, 120, 0.14);
+      border-color: rgba(240, 113, 120, 0.42);
+    }
+
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: 6px;
+    }
+    .field input, .field select {
+      width: 100%;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: var(--r);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 13px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow);
+    }
+
+    .btn-main {
+      width: 100%;
+      height: 40px;
+      margin-top: 4px;
+      border-radius: var(--r);
+      background: var(--btn-grad);
+      color: var(--btn-text);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      box-shadow: 0 12px 32px rgba(142, 196, 212, 0.28), var(--inset);
+      transition: transform 0.2s var(--ease), filter 0.2s;
+    }
+    .btn-main:hover { filter: brightness(1.05); transform: translateY(-1px); }
+    .btn-main:active { transform: none; }
+
+    .asset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .q {
+      padding: 12px 14px;
+      border-radius: var(--r);
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+    .q .k {
+      font-size: 10px;
+      color: var(--text-3);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .q .v {
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+
+    .code-box {
+      margin: 0;
+      padding: 14px;
+      border-radius: var(--r);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.65;
+      color: var(--text-2);
+      overflow: auto;
+      max-height: 132px;
+    }
+    .sliders { margin-top: 14px; display: grid; gap: 12px; }
+    .sl {
+      display: grid;
+      grid-template-columns: 56px 1fr 36px;
+      gap: 10px;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-3);
+    }
+    .sl input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      height: 2px;
+    }
+    .sl .mono { color: var(--text-2); font-size: 11px; text-align: right; }
+
+    .overlay {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(4, 10, 18, 0.62);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      width: min(400px, 100%);
+      padding: 28px;
+      border-radius: 10px;
+      background: var(--panel);
+      border: 1px solid var(--line-2);
+      box-shadow: var(--shade);
+      animation: up 0.25s var(--ease);
+    }
+    @keyframes up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    .modal h4 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .modal p {
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .modal ul {
+      margin: 0 0 20px 16px;
+      color: var(--down);
+      font-size: 12.5px;
+      line-height: 1.7;
+    }
+    .modal-act { display: flex; justify-content: flex-end; gap: 8px; }
+    .btn-g {
+      height: 36px;
+      padding: 0 16px;
+      border-radius: var(--r);
+      border: 1px solid var(--line);
+      color: var(--text-2);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .btn-g:hover { color: var(--text); }
+    .btn-g.primary {
+      background: var(--accent);
+      color: var(--btn-text);
+      border-color: transparent;
+      font-weight: 600;
+    }
+
+    .view-alt { display: none; padding: 28px; overflow: auto; height: 100%; }
+    .view-alt.on { display: block; }
+    .work.hide-trade .trade-only { display: none; }
+    .work.hide-trade .view-alt.on { display: block; grid-column: 1 / -1; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .card {
+      padding: 18px 20px;
+      border-radius: var(--r);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--inset);
+      transition: border-color 0.2s, transform 0.2s var(--ease);
+    }
+    .card:hover { border-color: var(--line-2); transform: translateY(-2px); }
+    .card .k {
+      font-size: 11px;
+      color: var(--text-3);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .card .v {
+      margin-top: 10px;
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+    }
+    .card .s { margin-top: 6px; font-size: 12px; color: var(--text-3); }
+
+    .panel-block {
+      border-radius: var(--r);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 18px 22px;
+      margin-bottom: 14px;
+      box-shadow: var(--inset);
+    }
+
+    .lede {
+      max-width: 52ch;
+      color: var(--text-2);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 1280px) {
+      :root { --nav: 188px; --rail: 300px; }
+      .sym-meta { display: none; }
+    }
+    @media (max-width: 1024px) {
+      .app { grid-template-columns: 1fr; }
+      .nav { display: none; }
+      .work { grid-template-columns: 1fr; }
+      .col-r { max-height: 42vh; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <svg style="display:none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 18V8M9 18v-6M14 18V5M19 18v-9"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12h4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6l-7-3z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16h12l-1.2-2V10a4.8 4.8 0 0 0-9.6 0v4L6 16z"/><path d="M10 18a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.8 5.8l1.4 1.4M16.8 16.8l1.4 1.4M18.2 5.8l-1.4 1.4M7.2 16.8l-1.4 1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M15 14.5A6 6 0 0 1 9 5a6.5 6.5 0 1 0 6 9.5z"/></symbol>
+  </svg>
+
+  <div class="app">
+    <aside class="nav" aria-label="主导航">
+      <div class="logo">
+        <strong contenteditable="true" data-pretext>qdata</strong>
+        <em>Desk</em>
+      </div>
+
+      <div class="nav-sec">工作台</div>
+      <a href="#" class="on" data-view="trade"><svg><use href="#i-grid"/></svg>交易</a>
+      <a href="#" data-view="research"><svg><use href="#i-chart"/></svg>研究</a>
+      <a href="#" data-view="strategy"><svg><use href="#i-code"/></svg>策略</a>
+
+      <div class="nav-sec">资产</div>
+      <a href="#" data-view="assets"><svg><use href="#i-wallet"/></svg>资金</a>
+      <a href="#" data-view="risk"><svg><use href="#i-shield"/></svg>风控</a>
+
+      <div class="nav-foot">
+        <div class="acct">
+          <div class="lbl">当前账户</div>
+          <div class="name" contenteditable="true" data-pretext>Paper · 主账户</div>
+          <div class="bal mono">¥ 1,024,380</div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="top">
+        <div class="search">
+          <svg><use href="#i-search"/></svg>
+          <input type="search" placeholder="搜索代码 / 名称" id="search" aria-label="搜索标的" />
+        </div>
+        <div class="sym-head">
+          <span class="code" id="symCode">600519.SH</span>
+          <span class="name" id="symName">贵州茅台</span>
+          <span class="price mono up" id="symPx">1,682.00</span>
+          <span class="chg mono up" id="symChg">+1.24%</span>
+          <div class="sym-meta">
+            <span>开<b>1,668</b></span>
+            <span>高<b class="up">1,690.5</b></span>
+            <span>低<b class="down">1,662</b></span>
+            <span>量<b>2.84万</b></span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button class="pill on" type="button">日线</button>
+          <button class="pill" type="button">分时</button>
+          <button class="pill" type="button">周线</button>
+          <button class="icon" type="button" id="btnTheme" aria-label="切换主题"><svg id="themeSvg"><use href="#i-sun"/></svg></button>
+          <button class="icon" type="button" aria-label="通知"><svg><use href="#i-bell"/></svg></button>
+        </div>
+      </header>
+
+      <div class="work" id="work">
+        <div class="col trade-only">
+          <div class="watch" id="watch" role="listbox" aria-label="自选标的">
+            <button class="wchip on" data-c="600519.SH" data-n="贵州茅台" data-p="1,682.00" data-ch="+1.24%" data-up="1"><span class="c">600519.SH</span><div class="p up">1,682.00</div></button>
+            <button class="wchip" data-c="000858.SZ" data-n="五粮液" data-p="148.60" data-ch="-0.62%" data-up="0"><span class="c">000858.SZ</span><div class="p down">148.60</div></button>
+            <button class="wchip" data-c="601318.SH" data-n="中国平安" data-p="46.18" data-ch="+0.35%" data-up="1"><span class="c">601318.SH</span><div class="p up">46.18</div></button>
+            <button class="wchip" data-c="000905.SH" data-n="中证500" data-p="5,842.31" data-ch="-0.18%" data-up="0"><span class="c">000905.SH</span><div class="p down">5,842.31</div></button>
+            <button class="wchip" data-c="300750.SZ" data-n="宁德时代" data-p="188.40" data-ch="+2.01%" data-up="1"><span class="c">300750.SZ</span><div class="p up">188.40</div></button>
+          </div>
+
+          <div class="chart-zone">
+            <div class="tf" role="tablist" aria-label="图表周期">
+              <button type="button">分时</button>
+              <button type="button" class="on">日线</button>
+              <button type="button">60分</button>
+              <button type="button">周线</button>
+              <button type="button">MACD</button>
+              <button type="button">BOLL</button>
+            </div>
+            <div class="chart" aria-label="价格图表">
+              <div class="chart-tag">Price · Adj Close</div>
+              <svg viewBox="0 0 900 360" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#8EC4D4" stop-opacity="0.32"/>
+                    <stop offset="100%" stop-color="#8EC4D4" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <g stroke="rgba(160,190,220,0.06)" stroke-width="1">
+                  <line x1="0" y1="72" x2="900" y2="72"/>
+                  <line x1="0" y1="144" x2="900" y2="144"/>
+                  <line x1="0" y1="216" x2="900" y2="216"/>
+                  <line x1="0" y1="288" x2="900" y2="288"/>
+                </g>
+                <path fill="url(#area)" d="M40,220 C120,200 160,240 240,180 C320,120 360,150 440,110 C520,70 560,90 640,60 C720,40 780,55 860,45 L860,340 L40,340 Z"/>
+                <path fill="none" stroke="#B0DBE8" stroke-width="2" d="M40,220 C120,200 160,240 240,180 C320,120 360,150 440,110 C520,70 560,90 640,60 C720,40 780,55 860,45"/>
+                <g stroke-width="1.25" opacity="0.88">
+                  <line x1="200" y1="160" x2="200" y2="230" stroke="#F07178"/><rect x="196" y="175" width="8" height="40" fill="#F07178" rx="1"/>
+                  <line x1="360" y1="100" x2="360" y2="170" stroke="#4ED68A"/><rect x="356" y="110" width="8" height="45" fill="#4ED68A" rx="1"/>
+                  <line x1="520" y1="55" x2="520" y2="120" stroke="#4ED68A"/><rect x="516" y="65" width="8" height="40" fill="#4ED68A" rx="1"/>
+                  <line x1="700" y1="35" x2="700" y2="95" stroke="#4ED68A"/><rect x="696" y="42" width="8" height="38" fill="#4ED68A" rx="1"/>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div class="strip">
+            <section>
+              <div class="sec-h"><h3>持仓</h3><button class="link" type="button">全部</button></div>
+              <table>
+                <thead><tr><th>代码</th><th>数量</th><th>市值</th><th>盈亏</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">600519.SH</td><td class="mono">200</td><td class="mono">336,400</td><td class="mono up">+6,400</td></tr>
+                  <tr><td class="mono">000858.SZ</td><td class="mono">800</td><td class="mono">118,880</td><td class="mono down">-2,720</td></tr>
+                  <tr><td class="mono">601318.SH</td><td class="mono">1,200</td><td class="mono">55,416</td><td class="mono up">+456</td></tr>
+                </tbody>
+              </table>
+            </section>
+            <section>
+              <div class="sec-h"><h3>成交</h3><button class="link" type="button">流水</button></div>
+              <table>
+                <thead><tr><th>时间</th><th>方向</th><th>价格</th><th>数量</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">09:35</td><td class="up">买入</td><td class="mono">1,678</td><td class="mono">100</td></tr>
+                  <tr><td class="mono">10:12</td><td class="down">卖出</td><td class="mono">149.2</td><td class="mono">200</td></tr>
+                  <tr><td class="mono">13:21</td><td class="up">买入</td><td class="mono">46.05</td><td class="mono">500</td></tr>
+                  <tr><td class="mono">14:55</td><td class="up">买入</td><td class="mono">187.1</td><td class="mono">100</td></tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
+        </div>
+
+        <div class="col-r trade-only">
+          <div class="rail">
+            <section>
+              <div class="sec-h"><h3>委托</h3></div>
+              <div class="sides">
+                <button class="side buy on" type="button" id="buy">买入</button>
+                <button class="side sell" type="button" id="sell">卖出</button>
+              </div>
+              <div class="field"><label for="ordCode">代码</label><input class="mono" id="ordCode" value="600519.SH" /></div>
+              <div class="field"><label>价格</label><input class="mono" value="1,682.00" /></div>
+              <div class="field"><label>数量</label><input class="mono" value="100" /></div>
+              <button class="btn-main" type="button" id="submit">确认委托</button>
+            </section>
+            <section>
+              <div class="sec-h"><h3>资产</h3></div>
+              <div class="asset-grid">
+                <div class="q"><div class="k">总资产</div><div class="v mono">1,024,380</div></div>
+                <div class="q"><div class="k">可用</div><div class="v mono">412,000</div></div>
+                <div class="q"><div class="k">市值</div><div class="v mono">612,380</div></div>
+                <div class="q"><div class="k">今日</div><div class="v mono up">+6,820</div></div>
+              </div>
+            </section>
+            <section class="grow">
+              <div class="sec-h"><h3>策略</h3><button class="link" type="button" data-view="strategy">模板</button></div>
+              <pre class="code-box">universe = "000905.SH"
+factor   = "ep"
+top_n    = 50
+weight   = "equal"</pre>
+              <div class="sliders">
+                <div class="sl"><span>TopN</span><input type="range" min="10" max="100" value="50" id="r1"/><span class="mono" id="v1">50</span></div>
+                <div class="sl"><span>窗口</span><input type="range" min="5" max="60" value="20" id="r2"/><span class="mono" id="v2">20</span></div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div class="view-alt" id="view-research">
+          <p class="lede" contenteditable="true" data-pretext>研究工作台：回测净值、因子矩阵与相对基准表现，供投研复盘与策略筛选。</p>
+          <div class="cards">
+            <div class="card"><div class="k">夏普比率</div><div class="v up">1.84</div><div class="s">近一年 · 中证500</div></div>
+            <div class="card"><div class="k">最大回撤</div><div class="v down">-8.6%</div><div class="s">回测区间峰值回撤</div></div>
+            <div class="card"><div class="k">年化收益</div><div class="v up">18.2%</div><div class="s">相对基准超额 4.1%</div></div>
+          </div>
+          <div class="panel-block">
+            <div class="sec-h"><h3>净值曲线</h3></div>
+            <svg viewBox="0 0 800 160" style="width:100%;height:160px;display:block" aria-hidden="true">
+              <path fill="none" stroke="#8EC4D4" stroke-width="1.85" d="M0,120 C80,115 120,130 200,90 C280,50 320,70 400,55 C480,40 520,45 600,30 C680,18 740,25 800,20"/>
+              <path fill="none" stroke="#556274" stroke-width="1" stroke-dasharray="4 4" d="M0,100 H800"/>
+            </svg>
+          </div>
+          <div class="panel-block">
+            <div class="sec-h"><h3>实验矩阵</h3></div>
+            <table>
+              <thead><tr><th>因子</th><th>加权</th><th>夏普</th><th>年化</th><th>回撤</th></tr></thead>
+              <tbody>
+                <tr><td>盈利收益率</td><td>等权</td><td class="mono up">7.56</td><td class="mono">139%</td><td class="mono">-3.0%</td></tr>
+                <tr><td>盈利收益率</td><td>行业中性</td><td class="mono up">6.75</td><td class="mono">147%</td><td class="mono">-3.7%</td></tr>
+                <tr><td>动量 20</td><td>等权</td><td class="mono down">-2.25</td><td class="mono down">-96%</td><td class="mono">-13.6%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="view-alt" id="view-strategy">
+          <p class="lede" contenteditable="true" data-pretext>策略模板库：一键载入动量、价值与行业中性配置，参数可在交易侧栏微调。</p>
+          <div class="panel-block">
+            <div class="sec-h"><h3>策略模板库</h3></div>
+            <table>
+              <thead><tr><th>名称</th><th>因子</th><th>加权</th><th>宇宙</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>动量 TopN</td><td class="mono">mom_20</td><td>等权</td><td>中证500</td><td><button class="pill" type="button">载入</button></td></tr>
+                <tr><td>价值 EP</td><td class="mono">ep</td><td>等权</td><td>中证500</td><td><button class="pill" type="button">载入</button></td></tr>
+                <tr><td>行业中性</td><td class="mono">ep</td><td>行业中性</td><td>中证500</td><td><button class="pill" type="button">载入</button></td></tr>
+                <tr><td>低波防御</td><td class="mono">vol_20</td><td>等权</td><td>沪深300</td><td><button class="pill" type="button">载入</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="view-alt" id="view-assets">
+          <p class="lede" contenteditable="true" data-pretext>资金视图：账户净值、可用现金与流水，对齐 Paper 会话审计。</p>
+          <div class="cards">
+            <div class="card"><div class="k">账户净值</div><div class="v">1,024,380</div><div class="s">Paper 主账户</div></div>
+            <div class="card"><div class="k">累计盈亏</div><div class="v up">+24,380</div><div class="s">自建仓以来</div></div>
+            <div class="card"><div class="k">可用现金</div><div class="v">412,000</div><div class="s">可下单额度</div></div>
+          </div>
+          <div class="panel-block">
+            <div class="sec-h"><h3>资金流水</h3></div>
+            <table>
+              <thead><tr><th>时间</th><th>类型</th><th>金额</th><th>余额</th><th>备注</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">07-15 15:05</td><td>卖出回款</td><td class="mono up">+29,840</td><td class="mono">412,000</td><td>000858.SZ</td></tr>
+                <tr><td class="mono">07-15 09:35</td><td>买入扣款</td><td class="mono down">-167,848</td><td class="mono">382,160</td><td>600519.SH</td></tr>
+                <tr><td class="mono">07-10 10:00</td><td>入金</td><td class="mono up">+1,000,000</td><td class="mono">1,000,000</td><td>初始资金</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="risk" role="dialog" aria-modal="true" aria-labelledby="riskTitle">
+    <div class="modal">
+      <h4 id="riskTitle">风险提示</h4>
+      <p contenteditable="true" data-pretext>委托提交前的合规检查。以下为弱提醒，不阻断下单。</p>
+      <ul>
+        <li>单票仓位 18%，接近限额 20%</li>
+        <li>标的流动性窗口偏弱，冲击成本可能上升</li>
+      </ul>
+      <div class="modal-act">
+        <button class="btn-g" type="button" data-x>取消</button>
+        <button class="btn-g primary" type="button" data-x>继续提交</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FALLBACK: vendor/pretext.js missing, using CDN -->
+  <script type="module">
+    import { prepare, layout } from "https://esm.sh/@chenglou/pretext";
+
+    const prepared = new Map();
+
+    async function bootPretext() {
+      await document.fonts.ready;
+      const elements = document.querySelectorAll("[data-pretext]");
+      for (const el of elements) {
+        const font = getComputedStyle(el).font;
+        prepared.set(el, prepare(el.textContent || "", font));
+      }
+      relayout();
+      new ResizeObserver(() => relayout()).observe(document.body);
+      for (const el of elements) {
+        if (el.contentEditable === "true") {
+          new MutationObserver(() => {
+            const font = getComputedStyle(el).font;
+            prepared.set(el, prepare(el.textContent || "", font));
+            relayout();
+          }).observe(el, { characterData: true, subtree: true, childList: true });
+        }
+      }
+    }
+
+    function relayout() {
+      for (const [el, handle] of prepared) {
+        const lh = parseFloat(getComputedStyle(el).lineHeight) || 20;
+        const { height } = layout(handle, Math.max(el.clientWidth, 40), lh);
+        el.style.height = `${height}px`;
+      }
+    }
+
+    bootPretext().catch(() => {
+      /* Pretext CDN optional; layout still usable without it */
+    });
+
+    const root = document.documentElement;
+    const themeBtn = document.getElementById("btnTheme");
+    const themeSvg = document.getElementById("themeSvg");
+
+    function theme(t) {
+      root.setAttribute("data-theme", t);
+      themeSvg.innerHTML = t === "dark" ? '<use href="#i-sun"/>' : '<use href="#i-moon"/>';
+      localStorage.setItem("qd-theme-ib", t);
+    }
+    theme(localStorage.getItem("qd-theme-ib") || "dark");
+    themeBtn.onclick = () => theme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+
+    const watch = document.getElementById("watch");
+    watch.addEventListener("click", (e) => {
+      const chip = e.target.closest(".wchip");
+      if (!chip) return;
+      watch.querySelectorAll(".wchip").forEach((c) => c.classList.remove("on"));
+      chip.classList.add("on");
+      document.getElementById("symCode").textContent = chip.dataset.c;
+      document.getElementById("symName").textContent = chip.dataset.n;
+      const px = document.getElementById("symPx");
+      const ch = document.getElementById("symChg");
+      px.textContent = chip.dataset.p;
+      ch.textContent = chip.dataset.ch;
+      const up = chip.dataset.up === "1";
+      px.className = "price mono " + (up ? "up" : "down");
+      ch.className = "chg mono " + (up ? "up" : "down");
+      document.getElementById("ordCode").value = chip.dataset.c;
+    });
+
+    document.querySelectorAll(".tf button, .top-actions .pill").forEach((b) => {
+      if (!b.classList.contains("icon") && b.id !== "btnTheme") {
+        b.addEventListener("click", () => {
+          const group = b.parentElement;
+          group.querySelectorAll("button").forEach((x) => {
+            if (x.classList.contains("pill") || x.parentElement.classList.contains("tf")) x.classList.remove("on");
+          });
+          if (b.classList.contains("pill") || b.parentElement.classList.contains("tf")) b.classList.add("on");
+        });
+      }
+    });
+
+    const buy = document.getElementById("buy");
+    const sell = document.getElementById("sell");
+    buy.onclick = () => { buy.classList.add("on"); sell.classList.remove("on"); };
+    sell.onclick = () => { sell.classList.add("on"); buy.classList.remove("on"); };
+
+    const sync = (r, v) => {
+      const el = document.getElementById(r);
+      const o = document.getElementById(v);
+      const u = () => { o.textContent = el.value; };
+      el.oninput = u;
+      u();
+    };
+    sync("r1", "v1");
+    sync("r2", "v2");
+
+    const work = document.getElementById("work");
+    document.querySelectorAll(".nav a[data-view]").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const v = a.dataset.view;
+        if (v === "risk") {
+          document.getElementById("risk").classList.add("open");
+          return;
+        }
+        document.querySelectorAll(".nav a").forEach((x) => x.classList.remove("on"));
+        a.classList.add("on");
+        const trade = v === "trade";
+        work.classList.toggle("hide-trade", !trade);
+        document.querySelectorAll(".view-alt").forEach((x) => x.classList.remove("on"));
+        if (!trade) {
+          const pane = document.getElementById("view-" + v);
+          if (pane) pane.classList.add("on");
+        }
+      });
+    });
+    document.querySelectorAll("[data-view='strategy']").forEach((el) => {
+      if (el.classList.contains("link")) {
+        el.addEventListener("click", () => {
+          document.querySelector('.nav a[data-view="strategy"]').click();
+        });
+      }
+    });
+
+    const risk = document.getElementById("risk");
+    document.getElementById("submit").onclick = () => risk.classList.add("open");
+    risk.querySelectorAll("[data-x]").forEach((b) => {
+      b.onclick = () => risk.classList.remove("open");
+    });
+    risk.addEventListener("click", (e) => {
+      if (e.target === risk) risk.classList.remove("open");
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+/* 独立 Chart 面板 — 复用 Desk tokens（暗色氛围 / 字体 / 涨跌色） */
+
+.chart-desk {
+  --c-ma5: #e0b35a;
+  --c-ma10: var(--accent-hi);
+  --c-boll: rgba(168, 180, 196, 0.45);
+
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font);
+  color: var(--text);
+  background: transparent;
+  overflow: hidden;
+}
+
+.chart-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px 10px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-2) 55%, transparent);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+
+.chart-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.68rem;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+
+.chart-controls input,
+.chart-controls select {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  padding: 7px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--panel);
+  color: var(--text);
+  min-width: 110px;
+  box-shadow: var(--inset);
+}
+
+.chart-controls input:focus,
+.chart-controls select:focus {
+  box-shadow: var(--glow);
+}
+
+.chart-controls button {
+  margin-top: 14px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--r);
+  background: var(--btn-grad);
+  color: var(--btn-text);
+  cursor: pointer;
+}
+
+.chart-controls button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.chart-meta {
+  margin-left: auto;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.chart-meta .code {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.chart-meta .px.up {
+  color: var(--up);
+  font-weight: 600;
+}
+.chart-meta .px.down {
+  color: var(--down);
+  font-weight: 600;
+}
+
+.chart-meta .hint,
+.chart-err {
+  color: var(--text-3);
+  font-size: 0.72rem;
+}
+
+.chart-err {
+  color: var(--down);
+  padding: 8px 20px 0;
+}
+
+.chart-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 20px 0;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.chart-tabs button {
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 6px 6px 0 0;
+  color: var(--text-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  cursor: pointer;
+}
+
+.chart-tabs button:hover {
+  color: var(--text-2);
+  background: var(--accent-dim);
+}
+
+.chart-tabs button.on {
+  color: var(--text);
+  background: var(--panel);
+  border-color: var(--line);
+  box-shadow: var(--inset);
+}
+
+.chart-stage {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  min-height: 0;
+}
+
+.chart-stage.single {
+  grid-template-rows: 1fr;
+}
+
+.chart-pane {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--inset);
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chart-pane svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.chart-pane .grid-line {
+  stroke: var(--line-2);
+  stroke-width: 1;
+}
+
+.chart-pane .axis {
+  fill: var(--text-3);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.chart-tip {
+  position: absolute;
+  right: 12px;
+  top: 8px;
+  z-index: 2;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  background: rgba(18, 28, 42, 0.88);
+  border: 1px solid var(--line-2);
+  padding: 4px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.chart-foot {
+  padding: 0 20px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.chart-foot a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.chart-foot a:hover {
+  color: var(--accent-hi);
+}
+
+.chart-legends {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: var(--text-2);
+}
+
+.chart-legends span::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  margin-right: 5px;
+  vertical-align: middle;
+  border-radius: 1px;
+}
+
+.chart-legends .ma5::before {
+  background: var(--c-ma5);
+}
+.chart-legends .ma10::before {
+  background: var(--c-ma10);
+}
+.chart-legends .boll::before {
+  background: var(--c-boll);
+}
+
+@media (max-width: 820px) {
+  .chart-meta {
+    margin-left: 0;
+    width: 100%;
+    text-align: left;
+  }
+  .chart-tabs {
+    overflow-x: auto;
+  }
+}

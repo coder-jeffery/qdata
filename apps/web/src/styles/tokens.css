@@ -1,0 +1,34 @@
+:root {
+  --pad: 8px;
+  --r: 8px;
+  --font: "IBM Plex Sans", "Noto Sans SC", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --nav: 212px;
+
+  --bg: #0a1018;
+  --bg-2: #0d1520;
+  --panel: #121c2a;
+  --panel-2: #172433;
+  --line: rgba(160, 190, 220, 0.08);
+  --line-2: rgba(160, 190, 220, 0.14);
+  --text: #f4f8fc;
+  --text-2: #a8b4c4;
+  --text-3: #6a788a;
+  --accent: #8ec4d4;
+  --accent-hi: #b0dbe8;
+  --accent-dim: rgba(142, 196, 212, 0.18);
+  --up: #4ed68a;
+  --down: #f07178;
+  --glow: 0 0 0 1px rgba(142, 196, 212, 0.42);
+  --shade: 0 20px 56px rgba(0, 0, 0, 0.5);
+  --inset: inset 0 1px 0 rgba(180, 210, 230, 0.05);
+  --btn-grad: linear-gradient(180deg, #a8d4e0 0%, #8ec4d4 55%, #6faabb 100%);
+  --btn-text: #0a1018;
+  --grain-opacity: 0.038;
+  --atmosphere: radial-gradient(
+    900px 420px at 78% -12%,
+    rgba(142, 196, 212, 0.12),
+    transparent 55%
+  );
+}
