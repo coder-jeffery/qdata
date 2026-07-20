@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Overview } from "../api/types";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum, pnlClass } from "../shared/format";
+import { usePagination } from "../shared/usePagination";
 
 export function OverviewPage() {
   const [data, setData] = useState<Overview | null>(null);
@@ -23,6 +25,23 @@ export function OverviewPage() {
     };
   }, []);
 
+  const paper = data?.paper;
+  const paperRows = useMemo(() => {
+    if (!paper?.session_id) return [];
+    return [
+      { k: "会话", v: paper.session_id },
+      { k: "As-of", v: paper.asof ?? "—" },
+      { k: "可用现金", v: fmtNum(paper.cash) },
+      { k: "市值", v: fmtNum(paper.market_value) },
+      {
+        k: "成交 / 拒单",
+        v: `${paper.n_filled ?? 0} / ${paper.n_rejected ?? 0}`,
+      },
+      { k: "盯市日", v: paper.mark_date ?? "—" },
+    ];
+  }, [paper]);
+  const paperPag = usePagination(paperRows, 20);
+
   if (err) {
     return (
       <div className="content">
@@ -38,7 +57,6 @@ export function OverviewPage() {
 
   const bar = data.daily_bar;
   const mon = data.factor_monitor;
-  const paper = data.paper;
 
   return (
     <div className="content">
@@ -66,15 +84,15 @@ export function OverviewPage() {
         </div>
         <div className="card">
           <div className="k">Paper 总资产</div>
-          <div className="v mono">{fmtNum(paper.total_asset, 0)}</div>
+          <div className="v mono">{fmtNum(paper?.total_asset, 0)}</div>
           <div className="s">
-            <span className={pnlClass(paper.pnl_vs_initial)}>
-              {paper.pnl_vs_initial != null
+            <span className={pnlClass(paper?.pnl_vs_initial)}>
+              {paper?.pnl_vs_initial != null
                 ? `${Number(paper.pnl_vs_initial) >= 0 ? "+" : ""}${fmtNum(paper.pnl_vs_initial, 0)}`
                 : "—"}
             </span>
             {" · "}
-            {paper.session_id?.slice(0, 18) ?? "无会话"}
+            {paper?.session_id?.slice(0, 18) ?? "无会话"}
           </div>
         </div>
       </div>
@@ -105,37 +123,25 @@ export function OverviewPage() {
 
       <div className="panel">
         <h3>Paper 摘要</h3>
-        {paper.session_id ? (
-          <table className="data">
-            <tbody>
-              <tr>
-                <td>会话</td>
-                <td className="mono">{paper.session_id}</td>
-              </tr>
-              <tr>
-                <td>As-of</td>
-                <td className="mono">{paper.asof ?? "—"}</td>
-              </tr>
-              <tr>
-                <td>可用现金</td>
-                <td className="mono">{fmtNum(paper.cash)}</td>
-              </tr>
-              <tr>
-                <td>市值</td>
-                <td className="mono">{fmtNum(paper.market_value)}</td>
-              </tr>
-              <tr>
-                <td>成交 / 拒单</td>
-                <td className="mono">
-                  {paper.n_filled ?? 0} / {paper.n_rejected ?? 0}
-                </td>
-              </tr>
-              <tr>
-                <td>盯市日</td>
-                <td className="mono">{paper.mark_date ?? "—"}</td>
-              </tr>
-            </tbody>
-          </table>
+        {paper?.session_id ? (
+          <>
+            <table className="data">
+              <tbody>
+                {paperPag.view.map((r) => (
+                  <tr key={r.k}>
+                    <td>{r.k}</td>
+                    <td className="mono">{r.v}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              page={paperPag.page}
+              pageSize={paperPag.pageSize}
+              total={paperPag.total}
+              onChange={paperPag.setPage}
+            />
+          </>
         ) : (
           <p className="muted">暂无 Paper 会话。先运行 paper_rebalance。</p>
         )}

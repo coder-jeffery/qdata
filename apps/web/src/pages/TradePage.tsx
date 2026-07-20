@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, type QuoteRow } from "../api/client";
 import type { PaperSessionDetail, PaperSessionMeta } from "../api/types";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum, pnlClass } from "../shared/format";
 import { pollJob } from "../shared/useJobPoll";
+import { usePagination } from "../shared/usePagination";
 import { useToast } from "../shared/Toast";
 
 export function TradePage() {
@@ -17,10 +19,15 @@ export function TradePage() {
   const [snapTs, setSnapTs] = useState<string | null>(null);
   const [rtBusy, setRtBusy] = useState(false);
 
+  const positions = detail?.positions || [];
+  const orders = detail?.orders || [];
+  const posPag = usePagination(positions, 20, sid);
+  const ordPag = usePagination(orders, 20, sid);
+
   useEffect(() => {
     const focus = params.get("session");
     api
-      .paperSessions(20)
+      .paperSessions(100)
       .then((d) => {
         setSessions(d.items);
         setSid(focus || d.items[0]?.session_id || "");
@@ -36,8 +43,6 @@ export function TradePage() {
       .catch((e: Error) => setErr(e.message));
   }, [sid]);
 
-  const positions = detail?.positions || [];
-  const orders = detail?.orders || [];
   const pnl = detail?.mark_latest?.pnl_vs_initial ?? detail?.meta?.last_mark_pnl_vs_initial;
 
   const codes = useMemo(
@@ -107,14 +112,16 @@ export function TradePage() {
   }
 
   const watch = useMemo(() => {
-    return positions.slice(0, 8).map((p) => {
+    return positions.map((p) => {
       const code = String(p.exchange_code ?? p.ts_code ?? "—");
+      const name = String(p.name ?? p.security_name ?? p.stock_name ?? "");
       const q = quotes[code.toUpperCase()];
       const price = q?.price != null && q.price !== "" ? Number(q.price) : null;
       const pre = q?.pre_close != null && q.pre_close !== "" ? Number(q.pre_close) : null;
       const chg = price != null && pre != null && pre !== 0 ? (price - pre) / pre : null;
       return {
         code,
+        name: name && name !== "—" ? name : "",
         qty: p.qty ?? p.quantity,
         mv: p.market_value ?? p.mv,
         price,
@@ -134,8 +141,8 @@ export function TradePage() {
 
   return (
     <div className="trade-layout" style={{ flex: 1, minHeight: 0 }}>
-      <div className="trade-main" style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "12px 24px 0" }}>
+      <div className="trade-main">
+        <div className="trade-banner">
           <div className="banner warn" style={{ marginBottom: 0 }}>
             Paper 只读交易台 · 展示会话持仓/成交，不接真金委托。完整写操作请到{" "}
             <Link to="/paper" style={{ color: "var(--accent-hi)" }}>
@@ -153,7 +160,8 @@ export function TradePage() {
           ) : (
             watch.map((w) => (
               <div key={w.code} className="wchip on">
-                <div className="c">{w.code}</div>
+                <div className="c mono">{w.code}</div>
+                {w.name ? <div className="n">{w.name}</div> : null}
                 <div className={`p mono ${w.chg != null ? (w.chg >= 0 ? "up" : "down") : ""}`}>
                   {w.price != null ? fmtNum(w.price, 2) : fmtNum(w.mv)}
                 </div>
@@ -167,10 +175,10 @@ export function TradePage() {
           )}
         </div>
 
-        <div className="chart-zone" style={{ flex: 1 }}>
-          <div style={{ display: "flex", gap: 16, alignItems: "baseline", marginBottom: 12 }}>
-            <strong style={{ fontSize: 15 }}>会话净值</strong>
-            <span className="mono" style={{ fontSize: 22 }}>
+        <div className="chart-zone">
+          <div className="chart-zone-head">
+            <strong style={{ fontSize: 14 }}>会话净值</strong>
+            <span className="mono" style={{ fontSize: 20 }}>
               {fmtNum(detail?.account?.total_asset)}
             </span>
             <span className={pnlClass(pnl)}>
@@ -180,7 +188,7 @@ export function TradePage() {
           </div>
           <div className="chart">
             <div className="chart-tag">Paper · Positions MV</div>
-            <svg viewBox="0 0 900 280" preserveAspectRatio="none">
+            <svg viewBox="0 0 900 96" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="area2" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#8EC4D4" stopOpacity="0.28" />
@@ -189,13 +197,13 @@ export function TradePage() {
               </defs>
               <path
                 fill="url(#area2)"
-                d="M40,180 C160,160 220,200 340,140 C460,90 520,110 640,80 C760,55 820,70 860,50 L860,260 L40,260 Z"
+                d="M40,62 C160,55 220,70 340,48 C460,30 520,38 640,28 C760,20 820,24 860,18 L860,96 L40,96 Z"
               />
               <path
                 fill="none"
                 stroke="#B0DBE8"
                 strokeWidth="2"
-                d="M40,180 C160,160 220,200 340,140 C460,90 520,110 640,80 C760,55 820,70 860,50"
+                d="M40,62 C160,55 220,70 340,48 C460,30 520,38 640,28 C760,20 820,24 860,18"
               />
             </svg>
           </div>
@@ -203,10 +211,11 @@ export function TradePage() {
 
         <div className="strip">
           <section>
-            <h3 style={{ marginBottom: 12 }}>持仓</h3>
+            <h3 style={{ marginBottom: 10 }}>持仓</h3>
             <table className="data">
               <thead>
                 <tr>
+                  <th>名称</th>
                   <th>代码</th>
                   <th>数量</th>
                   <th>市值</th>
@@ -214,12 +223,14 @@ export function TradePage() {
                 </tr>
               </thead>
               <tbody>
-                {positions.slice(0, 20).map((p, i) => {
+                {posPag.view.map((p, i) => {
                   const code = String(p.exchange_code ?? p.ts_code ?? "—");
+                  const name = String(p.name ?? p.security_name ?? p.stock_name ?? "—");
                   const q = quotes[code.toUpperCase()];
                   const price = q?.price != null && q.price !== "" ? Number(q.price) : null;
                   return (
                     <tr key={i}>
+                      <td>{name}</td>
                       <td className="mono">{code}</td>
                       <td className="mono">{fmtNum(p.qty ?? p.quantity)}</td>
                       <td className="mono">{fmtNum(p.market_value ?? p.mv)}</td>
@@ -229,9 +240,15 @@ export function TradePage() {
                 })}
               </tbody>
             </table>
+            <Pagination
+              page={posPag.page}
+              pageSize={posPag.pageSize}
+              total={posPag.total}
+              onChange={posPag.setPage}
+            />
           </section>
           <section>
-            <h3 style={{ marginBottom: 12 }}>成交</h3>
+            <h3 style={{ marginBottom: 10 }}>成交</h3>
             <table className="data">
               <thead>
                 <tr>
@@ -242,7 +259,7 @@ export function TradePage() {
                 </tr>
               </thead>
               <tbody>
-                {orders.slice(0, 20).map((o, i) => (
+                {ordPag.view.map((o, i) => (
                   <tr key={i}>
                     <td className="mono">{String(o.exchange_code ?? o.ts_code ?? "—")}</td>
                     <td>{String(o.side ?? o.direction ?? "—")}</td>
@@ -252,6 +269,12 @@ export function TradePage() {
                 ))}
               </tbody>
             </table>
+            <Pagination
+              page={ordPag.page}
+              pageSize={ordPag.pageSize}
+              total={ordPag.total}
+              onChange={ordPag.setPage}
+            />
           </section>
         </div>
       </div>

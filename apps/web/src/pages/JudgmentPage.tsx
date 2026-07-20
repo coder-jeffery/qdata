@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api, type QuoteRow } from "../api/client";
+import { Pagination } from "../shared/Pagination";
 import { useAsync } from "../shared/useAsync";
 import { fmtNum } from "../shared/format";
 import { pollJob } from "../shared/useJobPoll";
+import { usePagination } from "../shared/usePagination";
 import { useToast } from "../shared/Toast";
 
 export function JudgmentPage() {
@@ -14,6 +16,18 @@ export function JudgmentPage() {
   const { data, err, loading } = useAsync(() => api.judgment(code), [code]);
   const [quote, setQuote] = useState<QuoteRow | null>(null);
   const [rtBusy, setRtBusy] = useState(false);
+
+  const card = data?.card;
+  const scoreRows = useMemo(() => {
+    const scores = (card?.scores as Record<string, number | null>) || {};
+    const percentiles = (card?.percentiles as Record<string, number | null>) || {};
+    return Object.entries(scores).map(([k, v]) => ({
+      key: k,
+      score: v,
+      percentile: percentiles[k] ?? null,
+    }));
+  }, [card]);
+  const scorePag = usePagination(scoreRows, 20, code);
 
   useEffect(() => {
     if (routeCode) {
@@ -54,7 +68,6 @@ export function JudgmentPage() {
     }
   }
 
-  const card = data?.card;
   const price = quote?.price != null && quote.price !== "" ? Number(quote.price) : null;
   const pre =
     quote?.pre_close != null && quote.pre_close !== "" ? Number(quote.pre_close) : null;
@@ -138,23 +151,25 @@ export function JudgmentPage() {
                 </tr>
               </thead>
               <tbody>
-                {Object.entries((card.scores as Record<string, number | null>) || {}).map(
-                  ([k, v]) => (
-                    <tr key={k}>
-                      <td>{k}</td>
-                      <td className="mono">{v != null ? Number(v).toFixed(1) : "—"}</td>
-                      <td className="mono">
-                        {(card.percentiles as Record<string, number | null>)?.[k] != null
-                          ? `${(
-                              Number((card.percentiles as Record<string, number | null>)[k]) * 100
-                            ).toFixed(1)}%`
-                          : "—"}
-                      </td>
-                    </tr>
-                  ),
-                )}
+                {scorePag.view.map((r) => (
+                  <tr key={r.key}>
+                    <td>{r.key}</td>
+                    <td className="mono">{r.score != null ? Number(r.score).toFixed(1) : "—"}</td>
+                    <td className="mono">
+                      {r.percentile != null
+                        ? `${(Number(r.percentile) * 100).toFixed(1)}%`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+            <Pagination
+              page={scorePag.page}
+              pageSize={scorePag.pageSize}
+              total={scorePag.total}
+              onChange={scorePag.setPage}
+            />
           </div>
 
           <div className="panel">

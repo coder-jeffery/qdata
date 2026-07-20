@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { PaperSessionDetail, PaperSessionMeta } from "../api/types";
 import { ConfirmDialog } from "../shared/ConfirmDialog";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum, pnlClass } from "../shared/format";
 import { pollJob } from "../shared/useJobPoll";
+import { usePagination } from "../shared/usePagination";
 import { useToast } from "../shared/Toast";
 
 export function PaperPage() {
@@ -20,8 +22,12 @@ export function PaperPage() {
   const [busy, setBusy] = useState(false);
   const [confirmMark, setConfirmMark] = useState(false);
 
+  const listPag = usePagination(items, 20);
+  const comparePag = usePagination(compareRows, 20);
+  const posPag = usePagination(detail?.positions || [], 20, selected);
+
   async function reloadList(prefer?: string) {
-    const d = await api.paperSessions(40);
+    const d = await api.paperSessions(100);
     setItems(d.items);
     const next = prefer || selected || d.items[0]?.session_id || null;
     if (next) setSelected(next);
@@ -30,7 +36,7 @@ export function PaperPage() {
   useEffect(() => {
     const focus = params.get("session");
     api
-      .paperSessions(40)
+      .paperSessions(100)
       .then((d) => {
         setItems(d.items);
         setSelected(focus || d.items[0]?.session_id || null);
@@ -153,47 +159,55 @@ export function PaperPage() {
         {items.length === 0 ? (
           <p className="muted">暂无 Paper 会话</p>
         ) : (
-          <table className="data">
-            <thead>
-              <tr>
-                <th>选</th>
-                <th>会话</th>
-                <th>As-of</th>
-                <th>成交</th>
-                <th>拒单</th>
-                <th>盯市盈亏</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((s) => (
-                <tr
-                  key={s.session_id}
-                  style={{
-                    cursor: "pointer",
-                    background: selected === s.session_id ? "var(--accent-dim)" : undefined,
-                  }}
-                  onClick={() => setSelected(s.session_id)}
-                >
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={compareIds.includes(s.session_id)}
-                      onChange={() => toggleCompare(s.session_id)}
-                    />
-                  </td>
-                  <td className="mono">{s.session_id}</td>
-                  <td className="mono">{s.asof ?? "—"}</td>
-                  <td className="mono">{s.n_filled ?? 0}</td>
-                  <td className="mono">{s.n_rejected ?? 0}</td>
-                  <td className={pnlClass(s.last_mark_pnl_vs_initial)}>
-                    {s.last_mark_pnl_vs_initial != null
-                      ? fmtNum(s.last_mark_pnl_vs_initial)
-                      : "—"}
-                  </td>
+          <>
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>选</th>
+                  <th>会话</th>
+                  <th>As-of</th>
+                  <th>成交</th>
+                  <th>拒单</th>
+                  <th>盯市盈亏</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {listPag.view.map((s) => (
+                  <tr
+                    key={s.session_id}
+                    style={{
+                      cursor: "pointer",
+                      background: selected === s.session_id ? "var(--accent-dim)" : undefined,
+                    }}
+                    onClick={() => setSelected(s.session_id)}
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={compareIds.includes(s.session_id)}
+                        onChange={() => toggleCompare(s.session_id)}
+                      />
+                    </td>
+                    <td className="mono">{s.session_id}</td>
+                    <td className="mono">{s.asof ?? "—"}</td>
+                    <td className="mono">{s.n_filled ?? 0}</td>
+                    <td className="mono">{s.n_rejected ?? 0}</td>
+                    <td className={pnlClass(s.last_mark_pnl_vs_initial)}>
+                      {s.last_mark_pnl_vs_initial != null
+                        ? fmtNum(s.last_mark_pnl_vs_initial)
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              page={listPag.page}
+              pageSize={listPag.pageSize}
+              total={listPag.total}
+              onChange={listPag.setPage}
+            />
+          </>
         )}
       </div>
 
@@ -213,7 +227,7 @@ export function PaperPage() {
               </tr>
             </thead>
             <tbody>
-              {compareRows.map((r, i) => (
+              {comparePag.view.map((r, i) => (
                 <tr key={i}>
                   <td className="mono">{String(r.session_id ?? "—")}</td>
                   <td className="mono">{fmtNum(r.total_asset)}</td>
@@ -226,6 +240,12 @@ export function PaperPage() {
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={comparePag.page}
+            pageSize={comparePag.pageSize}
+            total={comparePag.total}
+            onChange={comparePag.setPage}
+          />
         </div>
       )}
 
@@ -255,40 +275,55 @@ export function PaperPage() {
             {detail.positions.length === 0 ? (
               <p className="muted">无持仓</p>
             ) : (
-              <table className="data">
-                <thead>
-                  <tr>
-                    <th>代码</th>
-                    <th>数量</th>
-                    <th>成本</th>
-                    <th>市值</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.positions.slice(0, 40).map((p, i) => {
-                    const code = String(p.exchange_code ?? p.ts_code ?? "—");
-                    return (
-                      <tr key={code + i}>
-                        <td className="mono">{code}</td>
-                        <td className="mono">{fmtNum(p.qty ?? p.quantity)}</td>
-                        <td className="mono">{fmtNum(p.cost_price ?? p.avg_cost, 2)}</td>
-                        <td className="mono">{fmtNum(p.market_value ?? p.mv)}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn ghost"
-                            style={{ minHeight: 30, padding: "0 10px" }}
-                            onClick={() => navigate(`/research/judgment/${encodeURIComponent(code)}`)}
-                          >
-                            研判
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <>
+                <table className="data">
+                  <thead>
+                    <tr>
+                      <th>名称</th>
+                      <th>代码</th>
+                      <th>数量</th>
+                      <th>成本</th>
+                      <th>市值</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {posPag.view.map((p, i) => {
+                      const code = String(p.exchange_code ?? p.ts_code ?? "—");
+                      const name = String(
+                        p.name ?? p.security_name ?? p.stock_name ?? "—",
+                      );
+                      return (
+                        <tr key={code + i}>
+                          <td>{name}</td>
+                          <td className="mono">{code}</td>
+                          <td className="mono">{fmtNum(p.qty ?? p.quantity)}</td>
+                          <td className="mono">{fmtNum(p.cost_price ?? p.avg_cost, 2)}</td>
+                          <td className="mono">{fmtNum(p.market_value ?? p.mv)}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn ghost"
+                              style={{ minHeight: 30, padding: "0 10px" }}
+                              onClick={() =>
+                                navigate(`/research/judgment/${encodeURIComponent(code)}`)
+                              }
+                            >
+                              研判
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <Pagination
+                  page={posPag.page}
+                  pageSize={posPag.pageSize}
+                  total={posPag.total}
+                  onChange={posPag.setPage}
+                />
+              </>
             )}
           </div>
         </>

@@ -1,9 +1,19 @@
+import { useMemo } from "react";
 import { api } from "../api/client";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum } from "../shared/format";
 import { useAsync } from "../shared/useAsync";
+import { usePagination } from "../shared/usePagination";
 
 export function FinancePage() {
   const { data, err, loading } = useAsync(() => api.dataFinance(), []);
+  const pit = data?.pit || [];
+  const monthly = useMemo(
+    () => (data?.monthly || []).slice().reverse(),
+    [data?.monthly],
+  );
+  const pitPag = usePagination(pit, 20);
+  const monthlyPag = usePagination(monthly, 20);
 
   if (loading) return <div className="content muted">载入中…</div>;
   if (err) return <div className="content err">{err}</div>;
@@ -54,7 +64,7 @@ export function FinancePage() {
             </tr>
           </thead>
           <tbody>
-            {(data.pit || []).map((r) => (
+            {pitPag.view.map((r) => (
               <tr key={String(r.field)}>
                 <td className="mono">{String(r.field)}</td>
                 <td className="mono">{fmtNum(r.n_hit)}</td>
@@ -66,6 +76,12 @@ export function FinancePage() {
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={pitPag.page}
+          pageSize={pitPag.pageSize}
+          total={pitPag.total}
+          onChange={pitPag.setPage}
+        />
         {!data.pit?.length && <p className="muted">暂无 PIT 覆盖（需日线 asof）</p>}
       </div>
 
@@ -80,18 +96,21 @@ export function FinancePage() {
             </tr>
           </thead>
           <tbody>
-            {(data.monthly || [])
-              .slice()
-              .reverse()
-              .map((r, i) => (
-                <tr key={i}>
-                  <td className="mono">{String(r.month ?? "—")}</td>
-                  <td className="mono">{fmtNum(r.rows)}</td>
-                  <td className="mono">{fmtNum(r.securities)}</td>
-                </tr>
-              ))}
+            {monthlyPag.view.map((r, i) => (
+              <tr key={i}>
+                <td className="mono">{String(r.month ?? "—")}</td>
+                <td className="mono">{fmtNum(r.rows)}</td>
+                <td className="mono">{fmtNum(r.securities)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
+        <Pagination
+          page={monthlyPag.page}
+          pageSize={monthlyPag.pageSize}
+          total={monthlyPag.total}
+          onChange={monthlyPag.setPage}
+        />
       </div>
     </div>
   );

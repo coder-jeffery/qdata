@@ -2,15 +2,17 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { ConfirmDialog } from "../shared/ConfirmDialog";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum } from "../shared/format";
 import { useAsync } from "../shared/useAsync";
 import { pollJob } from "../shared/useJobPoll";
+import { usePagination } from "../shared/usePagination";
 import { useToast } from "../shared/Toast";
 
 export function SignalsPage() {
   const toast = useToast();
   const navigate = useNavigate();
-  const list = useAsync(() => api.signals(40), []);
+  const list = useAsync(() => api.signals(100), []);
   const [selected, setSelected] = useState<string | null>(null);
   const detail = useAsync(
     () => (selected ? api.signal(selected) : Promise.resolve(null)),
@@ -20,10 +22,11 @@ export function SignalsPage() {
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
 
-  if (list.loading) return <div className="content muted">载入中…</div>;
-  if (list.err) return <div className="content err">{list.err}</div>;
-
   const items = list.data?.items || [];
+  const weights = detail.data?.weights || [];
+  const listPag = usePagination(items, 20);
+  const weightPag = usePagination(weights, 20, selected);
+  const cardPag = usePagination(cards || [], 20, cards?.length ?? 0);
 
   async function runJudge() {
     if (!selected) return;
@@ -52,6 +55,9 @@ export function SignalsPage() {
     }
   }
 
+  if (list.loading) return <div className="content muted">载入中…</div>;
+  if (list.err) return <div className="content err">{list.err}</div>;
+
   return (
     <div className="content">
       <ConfirmDialog
@@ -69,43 +75,51 @@ export function SignalsPage() {
         {!items.length ? (
           <p className="muted">暂无信号。请先 build_signal。</p>
         ) : (
-          <table className="data">
-            <thead>
-              <tr>
-                <th>信号 ID</th>
-                <th>As-of</th>
-                <th>因子</th>
-                <th>加权</th>
-                <th>宇宙</th>
-                <th>TopN</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((s) => {
-                const key = s.signal_id || s.path || "";
-                return (
-                  <tr
-                    key={key}
-                    style={{
-                      cursor: "pointer",
-                      background: selected === key ? "var(--accent-dim)" : undefined,
-                    }}
-                    onClick={() => {
-                      setSelected(key);
-                      setCards(null);
-                    }}
-                  >
-                    <td className="mono">{s.signal_id}</td>
-                    <td className="mono">{s.asof || "—"}</td>
-                    <td className="mono">{s.factor || "—"}</td>
-                    <td>{s.weight_method || "—"}</td>
-                    <td className="mono">{s.universe || "—"}</td>
-                    <td className="mono">{s.top_n ?? "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <>
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>信号 ID</th>
+                  <th>As-of</th>
+                  <th>因子</th>
+                  <th>加权</th>
+                  <th>宇宙</th>
+                  <th>TopN</th>
+                </tr>
+              </thead>
+              <tbody>
+                {listPag.view.map((s) => {
+                  const key = s.signal_id || s.path || "";
+                  return (
+                    <tr
+                      key={key}
+                      style={{
+                        cursor: "pointer",
+                        background: selected === key ? "var(--accent-dim)" : undefined,
+                      }}
+                      onClick={() => {
+                        setSelected(key);
+                        setCards(null);
+                      }}
+                    >
+                      <td className="mono">{s.signal_id}</td>
+                      <td className="mono">{s.asof || "—"}</td>
+                      <td className="mono">{s.factor || "—"}</td>
+                      <td>{s.weight_method || "—"}</td>
+                      <td className="mono">{s.universe || "—"}</td>
+                      <td className="mono">{s.top_n ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <Pagination
+              page={listPag.page}
+              pageSize={listPag.pageSize}
+              total={listPag.total}
+              onChange={listPag.setPage}
+            />
+          </>
         )}
       </div>
 
@@ -125,40 +139,48 @@ export function SignalsPage() {
           {detail.loading && <p className="muted">载入权重…</p>}
           {detail.err && <p className="err">{detail.err}</p>}
           {detail.data && (
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>代码</th>
-                  <th>权重</th>
-                  <th>行业</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {(detail.data.weights || []).slice(0, 50).map((w, i) => {
-                  const code = String(w.exchange_code ?? w.ts_code ?? "—");
-                  return (
-                    <tr key={i}>
-                      <td className="mono">{code}</td>
-                      <td className="mono">
-                        {w.weight != null ? Number(w.weight).toFixed(4) : "—"}
-                      </td>
-                      <td>{String(w.industry ?? w.sw_l1 ?? "—")}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn ghost"
-                          style={{ minHeight: 30, padding: "0 10px" }}
-                          onClick={() => navigate(`/research/judgment/${encodeURIComponent(code)}`)}
-                        >
-                          研判
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <>
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>代码</th>
+                    <th>权重</th>
+                    <th>行业</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weightPag.view.map((w, i) => {
+                    const code = String(w.exchange_code ?? w.ts_code ?? "—");
+                    return (
+                      <tr key={i}>
+                        <td className="mono">{code}</td>
+                        <td className="mono">
+                          {w.weight != null ? Number(w.weight).toFixed(4) : "—"}
+                        </td>
+                        <td>{String(w.industry ?? w.sw_l1 ?? "—")}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn ghost"
+                            style={{ minHeight: 30, padding: "0 10px" }}
+                            onClick={() => navigate(`/research/judgment/${encodeURIComponent(code)}`)}
+                          >
+                            研判
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <Pagination
+                page={weightPag.page}
+                pageSize={weightPag.pageSize}
+                total={weightPag.total}
+                onChange={weightPag.setPage}
+              />
+            </>
           )}
         </div>
       )}
@@ -177,7 +199,7 @@ export function SignalsPage() {
               </tr>
             </thead>
             <tbody>
-              {cards.slice(0, 40).map((r, i) => {
+              {cardPag.view.map((r, i) => {
                 const code = String(r.code ?? "—");
                 return (
                   <tr key={i}>
@@ -206,6 +228,12 @@ export function SignalsPage() {
               })}
             </tbody>
           </table>
+          <Pagination
+            page={cardPag.page}
+            pageSize={cardPag.pageSize}
+            total={cardPag.total}
+            onChange={cardPag.setPage}
+          />
           <p className="muted" style={{ marginTop: 8 }}>
             共 {fmtNum(cards.length)} 张
           </p>

@@ -1,16 +1,21 @@
 import { api } from "../api/client";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum } from "../shared/format";
 import { useAsync } from "../shared/useAsync";
+import { usePagination } from "../shared/usePagination";
 
 export function HealthPage() {
   const { data, err, loading } = useAsync(() => api.dataHealth(), []);
+  const marks = data?.summary?.watermarks || [];
+  const lag = data?.lag || [];
+  const marksPag = usePagination(marks, 20);
+  const lagPag = usePagination(lag, 20);
 
   if (loading) return <div className="content muted">载入中…</div>;
   if (err) return <div className="content err">{err}</div>;
   if (!data) return null;
 
   const s = data.summary;
-  const marks = s.watermarks || [];
 
   return (
     <div className="content">
@@ -59,7 +64,7 @@ export function HealthPage() {
             </tr>
           </thead>
           <tbody>
-            {marks.map((m) => (
+            {marksPag.view.map((m) => (
               <tr key={m.name}>
                 <td className="mono">{m.name}</td>
                 <td className="mono">{m.min_date || "—"}</td>
@@ -71,6 +76,12 @@ export function HealthPage() {
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={marksPag.page}
+          pageSize={marksPag.pageSize}
+          total={marksPag.total}
+          onChange={marksPag.setPage}
+        />
       </div>
 
       <div className="panel">
@@ -85,7 +96,7 @@ export function HealthPage() {
             </tr>
           </thead>
           <tbody>
-            {data.lag.map((r) => (
+            {lagPag.view.map((r) => (
               <tr key={r.table}>
                 <td className="mono">{r.table}</td>
                 <td className="mono">{r.max_date || "—"}</td>
@@ -95,6 +106,12 @@ export function HealthPage() {
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={lagPag.page}
+          pageSize={lagPag.pageSize}
+          total={lagPag.total}
+          onChange={lagPag.setPage}
+        />
       </div>
     </div>
   );

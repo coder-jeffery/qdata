@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum } from "../shared/format";
 import { useAsync } from "../shared/useAsync";
+import { usePagination } from "../shared/usePagination";
 
 export function UniversePage() {
   const [index, setIndex] = useState("000905.SH");
   const { data, err, loading } = useAsync(() => api.universe(undefined, index), [index]);
+  const sizes = data?.sizes || [];
+  const industry = data?.industry || [];
+  const sizesPag = usePagination(sizes, 20, index);
+  const indPag = usePagination(industry, 20, index);
 
   if (loading && !data) return <div className="content muted">载入中…</div>;
   if (err) return <div className="content err">{err}</div>;
@@ -53,7 +59,7 @@ export function UniversePage() {
             </tr>
           </thead>
           <tbody>
-            {(data.sizes || []).map((r) => (
+            {sizesPag.view.map((r) => (
               <tr key={String(r.index_code)}>
                 <td className="mono">{String(r.index_code)}</td>
                 <td className="mono">{fmtNum(r.members)}</td>
@@ -61,6 +67,12 @@ export function UniversePage() {
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={sizesPag.page}
+          pageSize={sizesPag.pageSize}
+          total={sizesPag.total}
+          onChange={sizesPag.setPage}
+        />
       </div>
 
       <div className="panel">
@@ -74,7 +86,7 @@ export function UniversePage() {
             </tr>
           </thead>
           <tbody>
-            {(data.industry || []).slice(0, 40).map((r, i) => (
+            {indPag.view.map((r, i) => (
               <tr key={i}>
                 <td>{String(r.industry_name ?? r.industry ?? "—")}</td>
                 <td className="mono">{fmtNum(r.members)}</td>
@@ -85,6 +97,12 @@ export function UniversePage() {
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={indPag.page}
+          pageSize={indPag.pageSize}
+          total={indPag.total}
+          onChange={indPag.setPage}
+        />
         {!data.industry?.length && <p className="muted">暂无行业分布</p>}
       </div>
     </div>

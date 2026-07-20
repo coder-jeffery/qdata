@@ -1,11 +1,17 @@
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum } from "../shared/format";
 import { useAsync } from "../shared/useAsync";
+import { usePagination } from "../shared/usePagination";
 
 export function BacktestDetailPage() {
   const { runId = "" } = useParams();
   const { data, err, loading } = useAsync(() => api.backtest(runId), [runId]);
+  const equity = data?.equity || [];
+  const fills = data?.fills || [];
+  const equityPag = usePagination(equity, 20, runId);
+  const fillsPag = usePagination(fills, 20, runId);
 
   if (loading) return <div className="content muted">载入中…</div>;
   if (err) return <div className="content err">{err}</div>;
@@ -55,7 +61,7 @@ export function BacktestDetailPage() {
       </div>
 
       <div className="panel">
-        <h3>净值尾部（最多 120 点）</h3>
+        <h3>净值序列</h3>
         <table className="data">
           <thead>
             <tr>
@@ -65,7 +71,7 @@ export function BacktestDetailPage() {
             </tr>
           </thead>
           <tbody>
-            {(data.equity || []).slice(-40).map((r, i) => (
+            {equityPag.view.map((r, i) => (
               <tr key={i}>
                 <td className="mono">{String(r.trade_date ?? r.date ?? "—")}</td>
                 <td className="mono">
@@ -80,11 +86,17 @@ export function BacktestDetailPage() {
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={equityPag.page}
+          pageSize={equityPag.pageSize}
+          total={equityPag.total}
+          onChange={equityPag.setPage}
+        />
         {!data.equity?.length && <p className="muted">无净值序列</p>}
       </div>
 
       <div className="panel">
-        <h3>成交样本</h3>
+        <h3>成交明细</h3>
         <table className="data">
           <thead>
             <tr>
@@ -96,7 +108,7 @@ export function BacktestDetailPage() {
             </tr>
           </thead>
           <tbody>
-            {(data.fills || []).slice(0, 30).map((r, i) => (
+            {fillsPag.view.map((r, i) => (
               <tr key={i}>
                 <td className="mono">{String(r.trade_date ?? "—")}</td>
                 <td className="mono">{String(r.exchange_code ?? r.ts_code ?? "—")}</td>
@@ -107,6 +119,12 @@ export function BacktestDetailPage() {
             ))}
           </tbody>
         </table>
+        <Pagination
+          page={fillsPag.page}
+          pageSize={fillsPag.pageSize}
+          total={fillsPag.total}
+          onChange={fillsPag.setPage}
+        />
       </div>
     </div>
   );

@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum } from "../shared/format";
 import { useAsync } from "../shared/useAsync";
+import { usePagination } from "../shared/usePagination";
 
 export function ResearchPage() {
-  const { data, err, loading } = useAsync(() => api.backtests(10), []);
-
+  const { data, err, loading } = useAsync(() => api.backtests(50), []);
   const matrix = data?.matrix || [];
+  const pag = usePagination(matrix, 20);
   const best = matrix[0];
 
   return (
@@ -39,9 +41,7 @@ export function ResearchPage() {
         </div>
       </div>
 
-      {(err || data?.error) && (
-        <p className="muted">{err || data?.error}</p>
-      )}
+      {(err || data?.error) && <p className="muted">{err || data?.error}</p>}
 
       <div className="panel">
         <h3>研究入口</h3>
@@ -76,50 +76,58 @@ export function ResearchPage() {
         {!loading && !matrix.length ? (
           <p className="muted">暂无回测 run</p>
         ) : (
-          <table className="data">
-            <thead>
-              <tr>
-                <th>因子</th>
-                <th>宇宙</th>
-                <th>夏普</th>
-                <th>年化</th>
-                <th>回撤</th>
-                <th>run</th>
-              </tr>
-            </thead>
-            <tbody>
-              {matrix.slice(0, 12).map((r, i) => (
-                <tr key={i}>
-                  <td className="mono">{String(r.factor ?? "—")}</td>
-                  <td className="mono">{String(r.universe ?? "—")}</td>
-                  <td className="mono">{r.sharpe != null ? Number(r.sharpe).toFixed(2) : "—"}</td>
-                  <td className="mono">
-                    {r.ann_return != null
-                      ? `${(Number(r.ann_return) * 100).toFixed(1)}%`
-                      : "—"}
-                  </td>
-                  <td className="mono down">
-                    {r.max_drawdown != null
-                      ? `${(Number(r.max_drawdown) * 100).toFixed(1)}%`
-                      : "—"}
-                  </td>
-                  <td>
-                    {r.run_id ? (
-                      <Link
-                        className="mono"
-                        style={{ color: "var(--accent-hi)" }}
-                        to={`/research/backtests/${encodeURIComponent(String(r.run_id))}`}
-                      >
-                        {String(r.run_id).slice(0, 18)}
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
+          <>
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>因子</th>
+                  <th>宇宙</th>
+                  <th>夏普</th>
+                  <th>年化</th>
+                  <th>回撤</th>
+                  <th>run</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {pag.view.map((r, i) => (
+                  <tr key={i}>
+                    <td className="mono">{String(r.factor ?? "—")}</td>
+                    <td className="mono">{String(r.universe ?? "—")}</td>
+                    <td className="mono">{r.sharpe != null ? Number(r.sharpe).toFixed(2) : "—"}</td>
+                    <td className="mono">
+                      {r.ann_return != null
+                        ? `${(Number(r.ann_return) * 100).toFixed(1)}%`
+                        : "—"}
+                    </td>
+                    <td className="mono down">
+                      {r.max_drawdown != null
+                        ? `${(Number(r.max_drawdown) * 100).toFixed(1)}%`
+                        : "—"}
+                    </td>
+                    <td>
+                      {r.run_id ? (
+                        <Link
+                          className="mono"
+                          style={{ color: "var(--accent-hi)" }}
+                          to={`/research/backtests/${encodeURIComponent(String(r.run_id))}`}
+                        >
+                          {String(r.run_id).slice(0, 18)}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              page={pag.page}
+              pageSize={pag.pageSize}
+              total={pag.total}
+              onChange={pag.setPage}
+            />
+          </>
         )}
       </div>
     </div>

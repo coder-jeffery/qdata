@@ -63,6 +63,63 @@ def _json_safe(obj: Any) -> Any:
     return str(obj)
 
 
+def _lookup_security_names(codes: list[str]) -> dict[str, str]:
+    """exchange_code → name（security_master）。失败时返回空映射。"""
+    uniq = sorted({str(c).strip().upper() for c in codes if c and str(c).strip() not in {"", "—"}})
+    if not uniq:
+        return {}
+    try:
+        from qdata import db
+
+        df = db.query_df(
+            """
+            SELECT exchange_code, anyLast(name) AS name
+            FROM security_master
+            WHERE exchange_code IN %(codes)s
+            GROUP BY exchange_code
+            """,
+            {"codes": tuple(uniq)},
+        )
+        if df is None or df.empty:
+            return {}
+        out: dict[str, str] = {}
+        for _, r in df.iterrows():
+            code = str(r["exchange_code"]).strip().upper()
+            name = str(r["name"]).strip() if r["name"] is not None else ""
+            if code and name:
+                out[code] = name
+        return out
+    except Exception:
+        return {}
+
+
+def _enrich_positions_with_names(positions: Any) -> list[dict[str, Any]]:
+    rows = _json_safe(positions) or []
+    if not isinstance(rows, list):
+        return []
+    codes: list[str] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        code = str(r.get("exchange_code") or r.get("ts_code") or "").strip()
+        if code:
+            codes.append(code)
+    names = _lookup_security_names(codes)
+    enriched: list[dict[str, Any]] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        row = dict(r)
+        code = str(row.get("exchange_code") or row.get("ts_code") or "").strip().upper()
+        existing = row.get("name") or row.get("security_name") or row.get("stock_name")
+        if existing is not None and str(existing).strip() and str(existing).strip() != code:
+            row["name"] = str(existing).strip()
+        else:
+            row["name"] = names.get(code) or "—"
+        enriched.append(row)
+    return enriched
+
+
 class MarkBody(BaseModel):
     mark_date: str | None = None
     async_mode: bool = Field(default=True, alias="async")
@@ -235,7 +292,7 @@ def api_paper_session(session_id: str) -> dict[str, Any]:
         "meta": _json_safe(data.get("meta")),
         "account": _json_safe(data.get("account")),
         "orders": _json_safe(data.get("orders")),
-        "positions": _json_safe(data.get("positions")),
+        "positions": _enrich_positions_with_names(data.get("positions")),
         "rejects": _json_safe(data.get("rejects")),
         "mark_latest": _json_safe(data.get("mark_latest")),
         "marks": _json_safe(data.get("marks")),

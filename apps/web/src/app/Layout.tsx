@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { api, type AlertItem, type JobRecord } from "../api/client";
+import { Pagination } from "../shared/Pagination";
+import { usePagination } from "../shared/usePagination";
 
 const titles: Record<string, { title: string; sub: string }> = {
   "/": { title: "运营总览", sub: "日批水位 · 监控 · Paper 摘要" },
@@ -74,6 +76,7 @@ export function Layout() {
   }, []);
 
   const badge = nError + nWarn;
+  const alertPag = usePagination(alerts, 10);
 
   return (
     <div className="shell">
@@ -176,23 +179,33 @@ export function Layout() {
                       当前无告警
                     </p>
                   ) : (
-                    <ul className="alert-list">
-                      {alerts.map((a) => (
-                        <li key={a.id} className={a.level === "error" ? "lvl-err" : "lvl-warn"}>
-                          {a.href ? (
-                            <Link to={a.href} onClick={() => setAlertOpen(false)}>
-                              <div className="t">{a.title}</div>
-                              <div className="m">{a.message}</div>
-                            </Link>
-                          ) : (
-                            <>
-                              <div className="t">{a.title}</div>
-                              <div className="m">{a.message}</div>
-                            </>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+                    <>
+                      <ul className="alert-list">
+                        {alertPag.view.map((a) => (
+                          <li key={a.id} className={a.level === "error" ? "lvl-err" : "lvl-warn"}>
+                            {a.href ? (
+                              <Link to={a.href} onClick={() => setAlertOpen(false)}>
+                                <div className="t">{a.title}</div>
+                                <div className="m">{a.message}</div>
+                              </Link>
+                            ) : (
+                              <>
+                                <div className="t">{a.title}</div>
+                                <div className="m">{a.message}</div>
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                      <div style={{ padding: "0 12px 10px" }}>
+                        <Pagination
+                          page={alertPag.page}
+                          pageSize={alertPag.pageSize}
+                          total={alertPag.total}
+                          onChange={alertPag.setPage}
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               )}

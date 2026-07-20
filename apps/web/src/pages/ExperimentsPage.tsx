@@ -2,15 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { ConfirmDialog } from "../shared/ConfirmDialog";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum } from "../shared/format";
 import { useAsync } from "../shared/useAsync";
 import { pollJob } from "../shared/useJobPoll";
+import { usePagination } from "../shared/usePagination";
 import { useToast } from "../shared/Toast";
 
 export function ExperimentsPage() {
   const toast = useToast();
   const navigate = useNavigate();
-  const list = useAsync(() => api.experiments(40), []);
+  const list = useAsync(() => api.experiments(100), []);
   const [selected, setSelected] = useState<string | null>(null);
   const detail = useAsync(
     () => (selected ? api.experiment(selected) : Promise.resolve(null)),
@@ -19,10 +21,10 @@ export function ExperimentsPage() {
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
 
-  if (list.loading) return <div className="content muted">载入中…</div>;
-  if (list.err) return <div className="content err">{list.err}</div>;
-
   const items = list.data?.items || [];
+  const summary = detail.data?.summary || [];
+  const listPag = usePagination(items, 20);
+  const summaryPag = usePagination(summary, 20, selected);
 
   async function paperFromExp() {
     if (!selected) return;
@@ -48,6 +50,9 @@ export function ExperimentsPage() {
     }
   }
 
+  if (list.loading) return <div className="content muted">载入中…</div>;
+  if (list.err) return <div className="content err">{list.err}</div>;
+
   return (
     <div className="content">
       <ConfirmDialog
@@ -65,38 +70,46 @@ export function ExperimentsPage() {
         {!items.length ? (
           <p className="muted">暂无实验。请先跑实验矩阵 CLI。</p>
         ) : (
-          <table className="data">
-            <thead>
-              <tr>
-                <th>实验 ID</th>
-                <th>创建时间</th>
-                <th>版本</th>
-                <th>格子</th>
-                <th>成功/失败</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((e) => (
-                <tr
-                  key={e.experiment_id}
-                  style={{
-                    cursor: "pointer",
-                    background: selected === e.experiment_id ? "var(--accent-dim)" : undefined,
-                  }}
-                  onClick={() => setSelected(e.experiment_id)}
-                >
-                  <td className="mono">{e.experiment_id}</td>
-                  <td className="mono">{String(e.created_at || "—").slice(0, 19)}</td>
-                  <td className="mono">{e.dataset_version || "—"}</td>
-                  <td className="mono">{e.n_cells ?? "—"}</td>
-                  <td className="mono">
-                    <span className="up">{e.n_ok ?? 0}</span> /{" "}
-                    <span className="down">{e.n_fail ?? 0}</span>
-                  </td>
+          <>
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>实验 ID</th>
+                  <th>创建时间</th>
+                  <th>版本</th>
+                  <th>格子</th>
+                  <th>成功/失败</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {listPag.view.map((e) => (
+                  <tr
+                    key={e.experiment_id}
+                    style={{
+                      cursor: "pointer",
+                      background: selected === e.experiment_id ? "var(--accent-dim)" : undefined,
+                    }}
+                    onClick={() => setSelected(e.experiment_id)}
+                  >
+                    <td className="mono">{e.experiment_id}</td>
+                    <td className="mono">{String(e.created_at || "—").slice(0, 19)}</td>
+                    <td className="mono">{e.dataset_version || "—"}</td>
+                    <td className="mono">{e.n_cells ?? "—"}</td>
+                    <td className="mono">
+                      <span className="up">{e.n_ok ?? 0}</span> /{" "}
+                      <span className="down">{e.n_fail ?? 0}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              page={listPag.page}
+              pageSize={listPag.pageSize}
+              total={listPag.total}
+              onChange={listPag.setPage}
+            />
+          </>
         )}
       </div>
 
@@ -111,53 +124,61 @@ export function ExperimentsPage() {
           {detail.loading && <p className="muted">载入明细…</p>}
           {detail.err && <p className="err">{detail.err}</p>}
           {detail.data && (
-            <table className="data" style={{ marginTop: 14 }}>
-              <thead>
-                <tr>
-                  <th>因子</th>
-                  <th>加权</th>
-                  <th>夏普</th>
-                  <th>年化</th>
-                  <th>回撤</th>
-                  <th>状态</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {(detail.data.summary || []).map((row, i) => (
-                  <tr key={i}>
-                    <td className="mono">{String(row.factor ?? "—")}</td>
-                    <td>{String(row.weight_method ?? "—")}</td>
-                    <td className="mono">{row.sharpe != null ? Number(row.sharpe).toFixed(2) : "—"}</td>
-                    <td className="mono">
-                      {row.ann_return != null
-                        ? `${(Number(row.ann_return) * 100).toFixed(1)}%`
-                        : "—"}
-                    </td>
-                    <td className="mono down">
-                      {row.max_drawdown != null
-                        ? `${(Number(row.max_drawdown) * 100).toFixed(1)}%`
-                        : "—"}
-                    </td>
-                    <td>{String(row.status ?? "—")}</td>
-                    <td>
-                      {row.run_id ? (
-                        <button
-                          type="button"
-                          className="btn ghost"
-                          style={{ minHeight: 30, padding: "0 10px" }}
-                          onClick={() =>
-                            navigate(`/research/backtests/${encodeURIComponent(String(row.run_id))}`)
-                          }
-                        >
-                          回测
-                        </button>
-                      ) : null}
-                    </td>
+            <>
+              <table className="data" style={{ marginTop: 14 }}>
+                <thead>
+                  <tr>
+                    <th>因子</th>
+                    <th>加权</th>
+                    <th>夏普</th>
+                    <th>年化</th>
+                    <th>回撤</th>
+                    <th>状态</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {summaryPag.view.map((row, i) => (
+                    <tr key={i}>
+                      <td className="mono">{String(row.factor ?? "—")}</td>
+                      <td>{String(row.weight_method ?? "—")}</td>
+                      <td className="mono">{row.sharpe != null ? Number(row.sharpe).toFixed(2) : "—"}</td>
+                      <td className="mono">
+                        {row.ann_return != null
+                          ? `${(Number(row.ann_return) * 100).toFixed(1)}%`
+                          : "—"}
+                      </td>
+                      <td className="mono down">
+                        {row.max_drawdown != null
+                          ? `${(Number(row.max_drawdown) * 100).toFixed(1)}%`
+                          : "—"}
+                      </td>
+                      <td>{String(row.status ?? "—")}</td>
+                      <td>
+                        {row.run_id ? (
+                          <button
+                            type="button"
+                            className="btn ghost"
+                            style={{ minHeight: 30, padding: "0 10px" }}
+                            onClick={() =>
+                              navigate(`/research/backtests/${encodeURIComponent(String(row.run_id))}`)
+                            }
+                          >
+                            回测
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Pagination
+                page={summaryPag.page}
+                pageSize={summaryPag.pageSize}
+                total={summaryPag.total}
+                onChange={summaryPag.setPage}
+              />
+            </>
           )}
           <p className="muted" style={{ marginTop: 8 }}>
             cells: {fmtNum(detail.data?.meta?.n_cells)}

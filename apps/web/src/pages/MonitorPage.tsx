@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { Pagination } from "../shared/Pagination";
 import { useAsync } from "../shared/useAsync";
+import { usePagination } from "../shared/usePagination";
 
 export function MonitorPage() {
   const [date, setDate] = useState<string>("");
@@ -8,6 +10,8 @@ export function MonitorPage() {
     () => api.monitor(date || undefined),
     [date],
   );
+  const coverage = data?.coverage || [];
+  const covPag = usePagination(coverage, 20, date || String(data?.report?.date || ""));
 
   if (loading && !data) return <div className="content muted">载入中…</div>;
   if (err) return <div className="content err">{err}</div>;
@@ -77,7 +81,7 @@ export function MonitorPage() {
                 </tr>
               </thead>
               <tbody>
-                {(data.coverage || []).map((r, i) => (
+                {covPag.view.map((r, i) => (
                   <tr key={i}>
                     <td className="mono">{String(r.factor_name ?? r.factor ?? "—")}</td>
                     <td className="mono">
@@ -91,6 +95,12 @@ export function MonitorPage() {
                 ))}
               </tbody>
             </table>
+            <Pagination
+              page={covPag.page}
+              pageSize={covPag.pageSize}
+              total={covPag.total}
+              onChange={covPag.setPage}
+            />
           </div>
         </>
       )}

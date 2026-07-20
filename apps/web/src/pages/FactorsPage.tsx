@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { api } from "../api/client";
+import { Pagination } from "../shared/Pagination";
 import { fmtNum } from "../shared/format";
 import { useAsync } from "../shared/useAsync";
+import { usePagination } from "../shared/usePagination";
 
 export function FactorsPage() {
   const [date, setDate] = useState<string>("");
@@ -9,6 +11,8 @@ export function FactorsPage() {
     () => api.factorCoverage(date || undefined),
     [date],
   );
+  const items = data?.items || [];
+  const pag = usePagination(items, 20, date || data?.trade_date || "");
 
   if (loading && !data) return <div className="content muted">载入中…</div>;
   if (err) return <div className="content err">{err}</div>;
@@ -50,7 +54,7 @@ export function FactorsPage() {
             </tr>
           </thead>
           <tbody>
-            {(data.items || []).map((r) => {
+            {pag.view.map((r) => {
               const cov = Number(r.coverage);
               const low = !Number.isNaN(cov) && cov < 0.9;
               return (
@@ -72,6 +76,12 @@ export function FactorsPage() {
             })}
           </tbody>
         </table>
+        <Pagination
+          page={pag.page}
+          pageSize={pag.pageSize}
+          total={pag.total}
+          onChange={pag.setPage}
+        />
         {!data.items?.length && <p className="muted">暂无因子覆盖数据</p>}
       </div>
     </div>
